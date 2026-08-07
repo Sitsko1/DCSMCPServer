@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DcsMcpBridge/DcsMcpBridge.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj" />
+    <Project Path="test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj" />
+  </Folder>
+</Solution>
