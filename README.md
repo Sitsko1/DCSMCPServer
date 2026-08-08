@@ -13,6 +13,10 @@ bridging tool calls to DCS's `Export.lua` socket.
   (`127.0.0.1:1024` by default).
 - Shows live status in its window: whether the MCP bridge is up, whether DCS is connected, and
   — when a mission is active — the aircraft, mission name, terrain, and single/multiplayer mode.
+- Settings window (gear icon, top-right) configures the MCP server port, the DCS host/port, and
+  DCS's install/Saved Games paths, and can generate + deploy the `Export.lua` companion script
+  DCS needs into the Saved Games `Scripts` folder (safe to run alongside other Export.lua tools —
+  it appends rather than overwrites). Saving restarts the bridge with the new settings.
 
 ## Running it
 

@@ -3,6 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Windows.Graphics;
 using Windows.UI;
@@ -15,6 +16,9 @@ namespace DCS.AIAutomator;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const string SunGlyph = "";
+    private const string MoonGlyph = "";
+
     private static readonly Color NominalColor = Color.FromArgb(0xFF, 0x3E, 0xCF, 0x8E);
     private static readonly Color WarningColor = Color.FromArgb(0xFF, 0xF2, 0xB8, 0x4B);
     private static readonly Color FaultColor = Color.FromArgb(0xFF, 0xE8, 0x5D, 0x5D);
@@ -38,22 +42,11 @@ public sealed partial class MainWindow : Window
         Render();
 
         // Initialize theme toggle to reflect current requested theme
-        try
+        if (this.Content is FrameworkElement fe)
         {
-            var app = (App)Application.Current!;
-            // If root content is available, determine its RequestedTheme
-            if (app is not null && app is App)
-            {
-                if (this.Content is FrameworkElement fe)
-                {
-                    ThemeToggle.IsChecked = fe.RequestedTheme == ElementTheme.Dark;
-                    ThemeToggle.Content = fe.RequestedTheme == ElementTheme.Dark ? "Dark" : "Light";
-                }
-            }
-        }
-        catch
-        {
-            // best-effort only
+            bool isDark = fe.RequestedTheme == ElementTheme.Dark;
+            ThemeToggle.IsChecked = isDark;
+            ThemeToggleIcon.Glyph = isDark ? MoonGlyph : SunGlyph;
         }
     }
 
@@ -62,9 +55,14 @@ public sealed partial class MainWindow : Window
         if (sender is ToggleButton tb)
         {
             var theme = tb.IsChecked == true ? ElementTheme.Dark : ElementTheme.Light;
+            ThemeToggleIcon.Glyph = theme == ElementTheme.Dark ? MoonGlyph : SunGlyph;
             ((App)Application.Current!).SetAppTheme(theme);
-            tb.Content = theme == ElementTheme.Dark ? "Dark" : "Light";
         }
+    }
+
+    private void OnSettingsClicked(object? sender, RoutedEventArgs e)
+    {
+        ((App)Application.Current!).OpenSettingsWindow();
     }
 
     private void OnStatusChanged(object? sender, EventArgs e)
@@ -92,7 +90,7 @@ public sealed partial class MainWindow : Window
         BridgeLamp.Background = new SolidColorBrush(color);
         BridgeStateText.Text = label;
         BridgeStateText.Foreground = new SolidColorBrush(color);
-        BridgeUrlText.Text = _status.BridgeState == BridgeState.Running ? "http://127.0.0.1:5270/mcp" : "—";
+        BridgeUrlText.Text = _status.McpEndpoint;
 
         SetPulse((Storyboard)RootGrid.Resources["BridgePulseStoryboard"], pulsing);
     }
@@ -105,7 +103,7 @@ public sealed partial class MainWindow : Window
         DcsLamp.Background = new SolidColorBrush(color);
         DcsStateText.Text = connected ? "CONNECTED" : "DISCONNECTED";
         DcsStateText.Foreground = new SolidColorBrush(color);
-        DcsAddressText.Text = "127.0.0.1:1024";
+        DcsAddressText.Text = _status.DcsEndpoint;
     }
 
     private void RenderMission()

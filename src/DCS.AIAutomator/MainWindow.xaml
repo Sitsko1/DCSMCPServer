@@ -64,8 +64,15 @@
             </Border>
         </Grid>
 
-            <!-- Theme toggle: switches Light/Dark for the window at runtime -->
-            <ToggleButton x:Name="ThemeToggle" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0" Click="OnThemeToggleClicked" ToolTipService.ToolTip="Toggle light/dark theme">Light</ToggleButton>
+            <!-- Toolbar: settings + theme toggle, styled as chromeless glass icon buttons -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button Style="{StaticResource GlassIconGhostButtonStyle}" Click="OnSettingsClicked" ToolTipService.ToolTip="Settings">
+                    <FontIcon Glyph="&#xE713;" FontSize="14" />
+                </Button>
+                <ToggleButton x:Name="ThemeToggle" Style="{StaticResource GlassIconButtonStyle}" Click="OnThemeToggleClicked" ToolTipService.ToolTip="Toggle light/dark theme">
+                    <FontIcon x:Name="ThemeToggleIcon" Glyph="&#xE706;" FontSize="14" />
+                </ToggleButton>
+            </StackPanel>
 
         <Border Grid.Row="1" Height="1" Background="{ThemeResource HairlineBrush}" Margin="24,0" />
 

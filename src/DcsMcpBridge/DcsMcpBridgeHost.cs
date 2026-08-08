@@ -15,7 +15,15 @@ using ModelContextProtocol;
 /// </summary>
 public sealed class DcsMcpBridgeHost : IAsyncDisposable
 {
-    public BridgeStatus Status { get; } = new();
+    // Optional constructor param (defaults to a fresh instance) so a caller that restarts the
+    // host across settings changes can pass the same BridgeStatus through and keep its UI
+    // subscription alive, instead of it going stale on every new DcsMcpBridgeHost.
+    public DcsMcpBridgeHost(BridgeStatus? status = null)
+    {
+        Status = status ?? new BridgeStatus();
+    }
+
+    public BridgeStatus Status { get; }
 
     private WebApplication? _app;
 
@@ -61,6 +69,8 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             _app.MapMcp("/mcp");
 
             await _app.StartAsync(cancellationToken);
+            Status.McpEndpoint = $"{listenUrl.TrimEnd('/')}/mcp";
+            Status.DcsEndpoint = $"{dcsIp}:{dcsPort}";
             Status.BridgeState = BridgeState.Running;
         }
         catch
@@ -70,13 +80,19 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
         }
     }
 
+    // Stops and fully tears down the current WebApplication so StartAsync can be called again
+    // (e.g. after a settings change) without leaking the previous instance.
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         if (_app is not null)
         {
             await _app.StopAsync(cancellationToken);
+            await _app.DisposeAsync();
+            _app = null;
         }
         Status.BridgeState = BridgeState.Stopped;
+        Status.McpEndpoint = "—";
+        Status.DcsEndpoint = "—";
     }
 
     public async ValueTask DisposeAsync()

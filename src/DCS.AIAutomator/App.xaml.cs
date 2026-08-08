@@ -3,40 +3,38 @@ using Microsoft.UI.Xaml;
 
 namespace DCS.AIAutomator;
 
-/// <summary>
-/// Provides application-specific behavior to supplement the default Application class.
-/// </summary>
 public partial class App : Application
 {
+    private readonly SettingsService _settings = new();
     private Window? _window;
+    private SettingsWindow? _settingsWindow;
     private DcsMcpBridgeHost? _bridgeHost;
+    private ElementTheme _currentTheme = ElementTheme.Dark;
 
-    /// <summary>
-    /// Initializes the singleton application object.  This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
     public App()
     {
         InitializeComponent();
     }
 
     /// <summary>
-    /// Sets the requested theme for the main window's root element so ThemeResource lookups
+    /// Sets the requested theme for every open window's root element so ThemeResource lookups
     /// follow the chosen theme at runtime.
     /// </summary>
-    /// <param name="theme">ElementTheme.Default/Light/Dark</param>
-    public void SetAppTheme(Microsoft.UI.Xaml.ElementTheme theme)
+    public void SetAppTheme(ElementTheme theme)
     {
-        if (_window is not null && _window.Content is Microsoft.UI.Xaml.FrameworkElement fe)
+        _currentTheme = theme;
+        ApplyTheme(_window);
+        ApplyTheme(_settingsWindow);
+    }
+
+    private void ApplyTheme(Window? window)
+    {
+        if (window?.Content is FrameworkElement fe)
         {
-            fe.RequestedTheme = theme;
+            fe.RequestedTheme = _currentTheme;
         }
     }
 
-    /// <summary>
-    /// Invoked when the application is launched.
-    /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         _bridgeHost = new DcsMcpBridgeHost();
@@ -44,6 +42,7 @@ public partial class App : Application
         var mainWindow = new MainWindow(_bridgeHost.Status);
         mainWindow.Closed += OnWindowClosed;
         _window = mainWindow;
+        ApplyTheme(_window);
         _window.Activate();
 
         _ = StartBridgeAsync();
@@ -53,12 +52,30 @@ public partial class App : Application
     {
         try
         {
-            await _bridgeHost!.StartAsync();
+            await _bridgeHost!.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort);
         }
         catch
         {
             // BridgeStatus already reflects Faulted; the window surfaces it. Nothing else to do.
         }
+    }
+
+    public void OpenSettingsWindow()
+    {
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(_settings, RestartBridgeAsync);
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+            ApplyTheme(_settingsWindow);
+        }
+        _settingsWindow.Activate();
+    }
+
+    private async Task RestartBridgeAsync()
+    {
+        if (_bridgeHost is null) return;
+        await _bridgeHost.StopAsync();
+        await _bridgeHost.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort);
     }
 
     private async void OnWindowClosed(object sender, WindowEventArgs args)

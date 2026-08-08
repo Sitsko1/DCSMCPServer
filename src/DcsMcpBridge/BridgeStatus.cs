@@ -51,4 +51,30 @@ public sealed class BridgeStatus
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    private string _mcpEndpoint = "—";
+    /// <summary>The MCP server's actual listen URL + route, e.g. "http://127.0.0.1:5270/mcp". Set by DcsMcpBridgeHost.StartAsync so the UI never hardcodes it.</summary>
+    public string McpEndpoint
+    {
+        get => _mcpEndpoint;
+        set
+        {
+            if (_mcpEndpoint == value) return;
+            _mcpEndpoint = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private string _dcsEndpoint = "—";
+    /// <summary>The DCS socket address the bridge is configured to connect to, e.g. "127.0.0.1:1024".</summary>
+    public string DcsEndpoint
+    {
+        get => _dcsEndpoint;
+        set
+        {
+            if (_dcsEndpoint == value) return;
+            _dcsEndpoint = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
 }
