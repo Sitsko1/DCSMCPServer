@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DCS.AIAutomator (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DCS.AIAutomator (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

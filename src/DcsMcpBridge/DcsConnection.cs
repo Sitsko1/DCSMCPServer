@@ -6,20 +6,22 @@ using Microsoft.Extensions.Logging;
 /// <summary>
 /// Owns the persistent TCP connection to DCS World's Export.lua socket. Registered as both a
 /// singleton (so tool classes can inject it to send Lua) and a hosted service (so its connect
-/// loop runs for the app's lifetime) — see Program.cs.
+/// loop runs for the app's lifetime) — see DcsMcpBridgeHost.
 /// </summary>
 public sealed class DcsConnection : BackgroundService, IDcsConnection
 {
     private readonly ILogger<DcsConnection> _logger;
+    private readonly BridgeStatus _status;
     private readonly string _dcsIp;
     private readonly int _dcsPort;
 
     private TcpClient? _client;
     private NetworkStream? _stream;
 
-    public DcsConnection(ILogger<DcsConnection> logger, string dcsIp = "127.0.0.1", int dcsPort = 1024)
+    public DcsConnection(ILogger<DcsConnection> logger, BridgeStatus status, string dcsIp = "127.0.0.1", int dcsPort = 1024)
     {
         _logger = logger;
+        _status = status;
         _dcsIp = dcsIp;
         _dcsPort = dcsPort;
     }
@@ -55,14 +57,17 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                     _client = new TcpClient();
                     await _client.ConnectAsync(_dcsIp, _dcsPort, stoppingToken);
                     _stream = _client.GetStream();
+                    _status.DcsConnected = true;
                     _logger.LogDebug("Connected to DCS socket.");
                 }
 
                 using var reader = new StreamReader(_stream, Encoding.UTF8, leaveOpen: true);
-                // ponytail: telemetry lines are drained but discarded — no tool reads them yet.
-                // Add a cached-latest-line property here if a future tool needs to read DCS state back.
-                while (!stoppingToken.IsCancellationRequested && await reader.ReadLineAsync(stoppingToken) is not null)
+                while (!stoppingToken.IsCancellationRequested && await reader.ReadLineAsync(stoppingToken) is string line)
                 {
+                    if (DcsTelemetryParser.TryParse(line, out MissionInfo? mission))
+                    {
+                        _status.CurrentMission = mission;
+                    }
                 }
             }
             catch (Exception ex)
@@ -80,6 +85,8 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _client?.Dispose();
         _client = null;
         _stream = null;
+        _status.DcsConnected = false;
+        _status.CurrentMission = null;
     }
 
     public override void Dispose()

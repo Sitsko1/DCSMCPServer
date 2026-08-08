@@ -1,5 +1,9 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/DCS.AIAutomator/DCS.AIAutomator.csproj" Id="de5e87cf-cde3-4cba-ac0b-590d716efdb1">
+      <Platform Project="x64" />
+      <Deploy />
+    </Project>
     <Project Path="src/DcsMcpBridge/DcsMcpBridge.csproj" />
   </Folder>
   <Folder Name="/test/">
