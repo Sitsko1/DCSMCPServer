@@ -1,3 +1,5 @@
+namespace DCS.Scripting;
+
 public enum BridgeState
 {
     Stopped,

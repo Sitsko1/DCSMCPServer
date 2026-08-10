@@ -1,5 +1,7 @@
 using System.IO;
 
+namespace DCS.Scripting;
+
 /// <summary>
 /// Writes the generated Export.lua companion script into a DCS Saved Games folder, and wires it
 /// into Export.lua without disturbing whatever other tools (DCS-BIOS, DCSFlightpanels, VAICOM,

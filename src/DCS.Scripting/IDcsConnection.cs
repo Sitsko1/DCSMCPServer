@@ -1,3 +1,5 @@
+namespace DCS.Scripting;
+
 /// <summary>
 /// The DCS-facing side of a tool: send raw Lua to be executed inside DCS World.
 /// Exists so tool classes (e.g. AtcTools) can be unit tested against a fake, without a real

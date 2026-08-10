@@ -1,3 +1,5 @@
+using DCS.Scripting;
+
 public class LuaExportDeployerTests : IDisposable
 {
     private readonly string _savedGamesDir = Path.Combine(Path.GetTempPath(), "DcsMcpBridgeTests_" + Guid.NewGuid());

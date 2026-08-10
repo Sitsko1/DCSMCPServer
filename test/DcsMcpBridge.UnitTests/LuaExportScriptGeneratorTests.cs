@@ -1,3 +1,5 @@
+using DCS.Scripting;
+
 public class LuaExportScriptGeneratorTests
 {
     [Fact]

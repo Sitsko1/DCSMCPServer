@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DCS.Scripting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,14 +43,7 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             builder.Logging.ClearProviders();
             builder.Logging.AddDebug();
 
-            builder.Services.AddSingleton(Status);
-            builder.Services.AddSingleton(sp => new DcsConnection(
-                sp.GetRequiredService<ILogger<DcsConnection>>(),
-                sp.GetRequiredService<BridgeStatus>(),
-                dcsIp,
-                dcsPort));
-            builder.Services.AddSingleton<IDcsConnection>(sp => sp.GetRequiredService<DcsConnection>());
-            builder.Services.AddHostedService(sp => sp.GetRequiredService<DcsConnection>());
+            builder.Services.AddDcsScripting(Status, dcsIp, dcsPort);
 
             // AtcAction has no source-generated JSON metadata in the SDK's default (reflection-free,
             // AOT-safe) serializer options — merge in AtcJsonContext for it.

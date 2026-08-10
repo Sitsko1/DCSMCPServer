@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content *)",
+      "Bash($paths *)",
+      "Bash($abacus *)",
+      "Bash($src *)",
+      "Bash($dst *)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet list src\\DcsMcpBridge\\DcsMcpBridge.csproj package 2>&1 | Select-Object -Firs…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet package search ModelContextProtocol.AspNetCore --take 5 2>&1 | Select-Object…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet restore DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet list src\\DCS.AIAutomator\\DCS.AIAutomator.csproj package 2>&1 | Select-Object…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 25)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer\\src\\DcsMcpBridge; Remove-Item LuaExportScriptGenerator.cs, LuaExportDeployer.cs, IDc…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer\\src\\DcsMcpBridge; if (Test-Path Tools) { Remove-Item Tools -Force; \"removed Tools di…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)"
+    ]
+  }
+}

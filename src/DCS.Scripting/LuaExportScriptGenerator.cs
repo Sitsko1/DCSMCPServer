@@ -1,3 +1,5 @@
+namespace DCS.Scripting;
+
 /// <summary>
 /// Builds the DCS-side Export.lua companion script that makes this bridge's telemetry/command
 /// contract real. DCS's Export hooks can't block on socket accept(), so per LuaSocket's own

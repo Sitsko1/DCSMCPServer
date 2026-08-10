@@ -3,10 +3,12 @@ using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+namespace DCS.Scripting;
+
 /// <summary>
 /// Owns the persistent TCP connection to DCS World's Export.lua socket. Registered as both a
 /// singleton (so tool classes can inject it to send Lua) and a hosted service (so its connect
-/// loop runs for the app's lifetime) — see DcsMcpBridgeHost.
+/// loop runs for the app's lifetime) — see DcsScriptingServiceCollectionExtensions.
 /// </summary>
 public sealed class DcsConnection : BackgroundService, IDcsConnection
 {
