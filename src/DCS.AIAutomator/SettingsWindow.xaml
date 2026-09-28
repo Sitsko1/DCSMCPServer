@@ -22,6 +22,7 @@
                 <NavigationViewItem Content="Connection" Tag="Connection" IsSelected="True" />
                 <NavigationViewItem Content="Paths" Tag="Paths" />
                 <NavigationViewItem Content="DCS Integration" Tag="Integration" />
+                <NavigationViewItem Content="Notifications" Tag="Notifications" />
             </NavigationView.MenuItems>
         </NavigationView>
 
@@ -121,6 +122,23 @@
                             <Button Content="Deploy Lua scripts" Click="OnDeployClicked" HorizontalAlignment="Left" />
                             <TextBlock x:Name="DeployStatusText" Style="{StaticResource SubtleMonoStyle}" Text="—" />
                         </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Notifications -->
+                <StackPanel x:Name="NotificationsPanel" Spacing="12" Visibility="Collapsed">
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="140" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Notification duration" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="How long each toast notification stays on screen, in seconds." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                            </StackPanel>
+                            <NumberBox x:Name="ToastDurationBox" Grid.Column="1" Minimum="1" Maximum="60" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                 </StackPanel>
 

@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using DCS.Scripting;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 
 namespace DCS.AIAutomator;
@@ -10,6 +11,8 @@ public partial class App : Application
     private Window? _window;
     private SettingsWindow? _settingsWindow;
     private DcsMcpBridgeHost? _bridgeHost;
+    private NotificationService? _notifications;
+    private BridgeStatusNotifier? _statusNotifier;
     private ElementTheme _currentTheme = ElementTheme.Dark;
 
     public App()
@@ -38,9 +41,11 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        _notifications = new NotificationService(DispatcherQueue.GetForCurrentThread());
         _bridgeHost = new DcsMcpBridgeHost();
+        _statusNotifier = new BridgeStatusNotifier(_bridgeHost.Status, _notifications);
 
-        var mainWindow = new MainWindow(_bridgeHost.Status);
+        var mainWindow = new MainWindow(_bridgeHost.Status, _notifications, _settings);
         mainWindow.Closed += OnWindowClosed;
         _window = mainWindow;
         ApplyTheme(_window);
@@ -65,7 +70,7 @@ public partial class App : Application
     {
         if (_settingsWindow is null)
         {
-            _settingsWindow = new SettingsWindow(_settings, RestartBridgeAsync);
+            _settingsWindow = new SettingsWindow(_settings, RestartBridgeAsync, _notifications!);
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             ApplyTheme(_settingsWindow);
         }

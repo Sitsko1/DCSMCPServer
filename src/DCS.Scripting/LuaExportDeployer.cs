@@ -5,12 +5,15 @@ namespace DCS.Scripting;
 /// <summary>
 /// Writes the generated Export.lua companion script into a DCS Saved Games folder, and wires it
 /// into Export.lua without disturbing whatever other tools (DCS-BIOS, DCSFlightpanels, VAICOM,
-/// etc.) already dofile() themselves in there.
+/// etc.) already dofile() themselves in there. Companion scripts live in a per-app subdirectory
+/// under Scripts (see <see cref="AppSubdirectoryName"/>), so future files this app adds never
+/// collide with other tools' files.
 /// </summary>
 public static class LuaExportDeployer
 {
     public const string ExportScriptFileName = "DCSMcpBridgeExport.lua";
-    private const string DofileLine = "dofile(lfs.writedir()..[[Scripts\\DCSMcpBridgeExport.lua]])";
+    public const string AppSubdirectoryName = "DCS.AIAutomator";
+    private const string DofileLine = "dofile(lfs.writedir()..[[Scripts\\DCS.AIAutomator\\DCSMcpBridgeExport.lua]])";
 
     public sealed record DeployResult(bool Success, string Message);
 
@@ -19,23 +22,43 @@ public static class LuaExportDeployer
         try
         {
             string scriptsDir = Path.Combine(savedGamesPath, "Scripts");
-            Directory.CreateDirectory(scriptsDir);
-
-            string exportScriptPath = Path.Combine(scriptsDir, ExportScriptFileName);
-            File.WriteAllText(exportScriptPath, LuaExportScriptGenerator.Generate(dcsHost, dcsPort));
-
+            string appDir = Path.Combine(scriptsDir, AppSubdirectoryName);
+            string exportScriptPath = Path.Combine(appDir, ExportScriptFileName);
             string exportLuaPath = Path.Combine(scriptsDir, "Export.lua");
-            if (!File.Exists(exportLuaPath))
+
+            string generated = LuaExportScriptGenerator.Generate(dcsHost, dcsPort);
+
+            // 1. Does Export.lua exist, and is it already wired to our companion script?
+            bool exportLuaExists = File.Exists(exportLuaPath);
+            bool alreadyWired = exportLuaExists && File.ReadAllText(exportLuaPath).Contains(ExportScriptFileName);
+
+            if (alreadyWired)
+            {
+                // 2. Verify the companion script exists in the right location and matches what we'd deploy.
+                bool scriptExists = File.Exists(exportScriptPath);
+                bool scriptIdentical = scriptExists && File.ReadAllText(exportScriptPath) == generated;
+
+                if (scriptExists && scriptIdentical)
+                {
+                    return new DeployResult(true, "Already deployed - no changes were made.");
+                }
+            }
+
+            // 3. Otherwise write all files.
+            Directory.CreateDirectory(appDir);
+            File.WriteAllText(exportScriptPath, generated);
+
+            if (!exportLuaExists)
             {
                 File.WriteAllText(exportLuaPath, DofileLine + "\n");
             }
-            else if (!File.ReadAllText(exportLuaPath).Contains(ExportScriptFileName))
+            else if (!alreadyWired)
             {
                 File.Copy(exportLuaPath, exportLuaPath + ".bak", overwrite: true);
                 File.AppendAllText(exportLuaPath, "\n" + DofileLine + "\n");
             }
 
-            return new DeployResult(true, $"Deployed to {scriptsDir}");
+            return new DeployResult(true, $"Deployed to {appDir}");
         }
         catch (Exception ex)
         {

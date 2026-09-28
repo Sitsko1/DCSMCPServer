@@ -43,6 +43,12 @@ public sealed class SettingsService
         set => _values.Values[nameof(DcsSavedGamesPath)] = value;
     }
 
+    public int ToastDurationSeconds
+    {
+        get => GetInt(nameof(ToastDurationSeconds), 5);
+        set => _values.Values[nameof(ToastDurationSeconds)] = value;
+    }
+
     public string McpListenUrl => $"http://127.0.0.1:{McpPort}";
 
     private static string DefaultSavedGamesPath() =>

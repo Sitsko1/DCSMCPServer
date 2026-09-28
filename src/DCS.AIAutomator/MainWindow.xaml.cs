@@ -26,18 +26,29 @@ public sealed partial class MainWindow : Window
     private static readonly Color IdleColor = Color.FromArgb(0xFF, 0x7C, 0x94, 0x90);
 
     private readonly BridgeStatus _status;
+    private readonly NotificationService _notifications;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly bool _animationsEnabled;
 
-    public MainWindow(BridgeStatus status)
+    public MainWindow(BridgeStatus status, NotificationService notifications, SettingsService settings)
     {
         InitializeComponent();
 
         _status = status;
+        _notifications = notifications;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _animationsEnabled = new UISettings().AnimationsEnabled;
 
         AppWindow.Resize(new SizeInt32(420, 520));
+
+        var toastHost = new ToastHost(notifications, settings)
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 16, 16),
+        };
+        Grid.SetRowSpan(toastHost, 4);
+        RootGrid.Children.Add(toastHost);
 
         _status.Changed += OnStatusChanged;
         Render();
@@ -64,6 +75,15 @@ public sealed partial class MainWindow : Window
     private void OnSettingsClicked(object? sender, RoutedEventArgs e)
     {
         ((App)Application.Current!).OpenSettingsWindow();
+    }
+
+    private void OnHistoryClicked(object? sender, RoutedEventArgs e)
+    {
+        var dialog = new NotificationHistoryDialog(_notifications)
+        {
+            XamlRoot = this.Content.XamlRoot,
+        };
+        _ = dialog.ShowAsync();
     }
 
     private void OnStatusChanged(object? sender, EventArgs e)

@@ -6,49 +6,75 @@ public class LuaExportDeployerTests : IDisposable
 
     public void Dispose() => Directory.Delete(_savedGamesDir, recursive: true);
 
+    private string ScriptsDir => Path.Combine(_savedGamesDir, "Scripts");
+    private string AppDir => Path.Combine(ScriptsDir, LuaExportDeployer.AppSubdirectoryName);
+    private string ExportScriptPath => Path.Combine(AppDir, LuaExportDeployer.ExportScriptFileName);
+    private string ExportLuaPath => Path.Combine(ScriptsDir, "Export.lua");
+
     [Fact]
-    public void Deploy_WritesExportScriptAndCreatesExportLua_WhenNoneExists()
+    public void Deploy_WritesExportScriptInAppSubdirectoryAndCreatesExportLua_WhenNoneExists()
     {
         var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
 
         Assert.True(result.Success);
-        string scriptsDir = Path.Combine(_savedGamesDir, "Scripts");
-        Assert.True(File.Exists(Path.Combine(scriptsDir, LuaExportDeployer.ExportScriptFileName)));
+        Assert.True(File.Exists(ExportScriptPath));
 
-        string exportLua = File.ReadAllText(Path.Combine(scriptsDir, "Export.lua"));
+        string exportLua = File.ReadAllText(ExportLuaPath);
         Assert.Contains(LuaExportDeployer.ExportScriptFileName, exportLua);
+        Assert.Contains(LuaExportDeployer.AppSubdirectoryName, exportLua);
     }
 
     [Fact]
     public void Deploy_AppendsDofileAndBacksUpExistingExportLua_WhenNotAlreadyWired()
     {
-        string scriptsDir = Path.Combine(_savedGamesDir, "Scripts");
-        Directory.CreateDirectory(scriptsDir);
-        string exportLuaPath = Path.Combine(scriptsDir, "Export.lua");
-        File.WriteAllText(exportLuaPath, "-- some other tool's dofile\ndofile(lfs.writedir()..[[Scripts\\OtherTool.lua]])\n");
+        Directory.CreateDirectory(ScriptsDir);
+        File.WriteAllText(ExportLuaPath, "-- some other tool's dofile\ndofile(lfs.writedir()..[[Scripts\\OtherTool.lua]])\n");
 
         var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
 
         Assert.True(result.Success);
-        string exportLua = File.ReadAllText(exportLuaPath);
+        string exportLua = File.ReadAllText(ExportLuaPath);
         Assert.Contains("OtherTool.lua", exportLua);
         Assert.Contains(LuaExportDeployer.ExportScriptFileName, exportLua);
-        Assert.True(File.Exists(exportLuaPath + ".bak"));
-        Assert.Contains("OtherTool.lua", File.ReadAllText(exportLuaPath + ".bak"));
+        Assert.True(File.Exists(ExportLuaPath + ".bak"));
+        Assert.Contains("OtherTool.lua", File.ReadAllText(ExportLuaPath + ".bak"));
     }
 
     [Fact]
     public void Deploy_IsIdempotent_DoesNotDuplicateDofileOrRewriteBackup()
     {
         LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
-        string exportLuaPath = Path.Combine(_savedGamesDir, "Scripts", "Export.lua");
-        string afterFirstDeploy = File.ReadAllText(exportLuaPath);
+        string afterFirstDeploy = File.ReadAllText(ExportLuaPath);
 
         var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
 
         Assert.True(result.Success);
-        string afterSecondDeploy = File.ReadAllText(exportLuaPath);
+        string afterSecondDeploy = File.ReadAllText(ExportLuaPath);
         Assert.Equal(afterFirstDeploy, afterSecondDeploy);
-        Assert.False(File.Exists(exportLuaPath + ".bak"));
+        Assert.False(File.Exists(ExportLuaPath + ".bak"));
+    }
+
+    [Fact]
+    public void Deploy_ReportsAlreadyDeployed_WhenScriptExistsAndIsIdentical()
+    {
+        LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+
+        var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+
+        Assert.True(result.Success);
+        Assert.Contains("Already deployed", result.Message);
+    }
+
+    [Fact]
+    public void Deploy_RewritesScript_WhenWiredButScriptIsStale()
+    {
+        LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        File.WriteAllText(ExportScriptPath, "-- stale content");
+
+        var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+
+        Assert.True(result.Success);
+        Assert.Contains("Deployed", result.Message);
+        Assert.Contains("DCSMcpBridgeExport.lua", File.ReadAllText(ExportScriptPath));
     }
 }
