@@ -16,7 +16,11 @@ bridging tool calls to DCS's `Export.lua` socket.
 - Settings window (gear icon, top-right) configures the MCP server port, the DCS host/port, and
   DCS's install/Saved Games paths, and can generate + deploy the `Export.lua` companion script
   DCS needs into the Saved Games `Scripts` folder (safe to run alongside other Export.lua tools —
-  it appends rather than overwrites). Saving restarts the bridge with the new settings.
+  it appends rather than overwrites). Companion scripts are written under
+  `Scripts\DCS.AIAutomator\` so they never collide with other tools' files. Deploy is
+  idempotent: if `Export.lua` is already wired and the companion script is present and
+  up-to-date, it reports "Already deployed" and writes nothing. Saving restarts the bridge with
+  the new settings.
 
 ## Running it
 

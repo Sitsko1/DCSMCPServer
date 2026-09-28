@@ -15,7 +15,20 @@
       "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer\\src\\DcsMcpBridge; if (Test-Path Tools) { Remove-Item Tools -Force; \"removed Tools di…)",
       "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
       "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
-      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)"
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 30)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer\\src\\DCS.AIAutomator; $lines = Get-Content SettingsWindow.xaml.cs; for ($i=78; $i -le…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj 2>&1 | Select-Object -Last …)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj 2>&1 | Select-Object -Last …)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj 2>&1 | Select-Object -Last …)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj 2>&1 | Select-Object -Last …)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj -p:Platform=x64 2>&1 | Sele…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 15)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet test DcsMcp.slnx 2>&1 | Select-Object -Last 8)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build src\\DCS.AIAutomator\\DCS.AIAutomator.csproj -p:Platform=x64 2>&1 | Sele…)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer; dotnet build DcsMcp.slnx 2>&1 | Select-Object -Last 6; dotnet test DcsMcp.slnx 2>&1…)",
+      "Bash(git diff *)",
+      "Bash(dotnet *)",
+      "Bash(cd F:\\All-Data\\Dev\\Git\\DCSMCPServer)"
     ]
   }
 }
