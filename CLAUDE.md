@@ -118,9 +118,10 @@ removes our `dofile(...)` lines from `Export.lua` (other tools' lines untouched,
 and deletes the old `DCSMcpBridgeExport.lua` scripts — left in place they'd bind the same port.
 Idempotent: nothing to migrate + identical script → "Already deployed", writes nothing.
 
-Verified against a live DCS session with the earlier Export.lua design: deploy, the Lua
-listener and the app's connection work alongside WWT/Tacview/DCS-BIOS. **The Hooks script
-itself is not yet verified live**, nor is `send_atc_instruction` via a real MCP client.
+Verified against a live DCS session (single-player, F/A-18C quick-start): the Hooks script
+deploys, DCS listens, the app connects, and the readout shows the correct mission name, map
+and aircraft display name. Still unverified live: `send_atc_instruction` via a real MCP client
+(and it's known broken — see issue #4).
 
 The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
 must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a

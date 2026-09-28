@@ -142,11 +142,12 @@ public sealed partial class SettingsWindow : Window
         try
         {
             await _restartBridgeAsync();
-            SaveStatusText.Text = "Saved.";
             _notifications.Show("Settings saved", "Bridge restarted with the new settings.", NotificationSeverity.Success);
+            Close(); // the toast in the main window confirms the save
         }
         catch (Exception ex)
         {
+            // Stay open so the error is visible and the offending value (e.g. a busy port) can be fixed.
             SaveStatusText.Text = $"Saved, but bridge restart failed: {ex.Message}";
             _notifications.Show("Bridge restart failed", ex.Message, NotificationSeverity.Error);
         }
