@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Text.Json.Serialization;
 using ModelContextProtocol.Server;
 
+namespace DCS.Scripting;
+
 [JsonConverter(typeof(JsonStringEnumConverter<AtcAction>))]
 public enum AtcAction
 {
@@ -13,9 +15,9 @@ public enum AtcAction
 
 // AtcAction has no source-generated JSON metadata in the SDK's default (reflection-free,
 // PublishAot-safe) serializer options — this context supplies it. Merged into the options
-// passed to .WithTools<AtcTools>() in Program.cs.
+// passed to .WithTools<AtcTools>() in the bridge host.
 [JsonSerializable(typeof(AtcAction))]
-internal partial class AtcJsonContext : JsonSerializerContext
+public partial class AtcJsonContext : JsonSerializerContext
 {
 }
 
