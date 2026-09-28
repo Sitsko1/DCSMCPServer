@@ -1,3 +1,5 @@
+using DCS.Scripting;
+
 public class AtcToolsTests
 {
     [Fact]

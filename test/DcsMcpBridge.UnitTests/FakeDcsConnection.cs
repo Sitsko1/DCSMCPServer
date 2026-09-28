@@ -1,3 +1,5 @@
+using DCS.Scripting;
+
 public class FakeDcsConnection : IDcsConnection
 {
     public bool ShouldSucceed { get; set; } = true;

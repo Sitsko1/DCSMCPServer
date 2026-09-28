@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+namespace DCS.Scripting;
+
 /// <summary>
 /// Wire contract for DCS-side telemetry: one JSON object per line, written to Export.lua's
 /// socket alongside (or instead of) raw export data. Adjust this shape to match whatever the

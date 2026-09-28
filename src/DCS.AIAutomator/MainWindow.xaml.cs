@@ -1,8 +1,10 @@
 using System;
+using DCS.Scripting;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Windows.Graphics;
 using Windows.UI;
@@ -15,45 +17,48 @@ namespace DCS.AIAutomator;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const string SunGlyph = "";
+    private const string MoonGlyph = "";
+
     private static readonly Color NominalColor = Color.FromArgb(0xFF, 0x3E, 0xCF, 0x8E);
     private static readonly Color WarningColor = Color.FromArgb(0xFF, 0xF2, 0xB8, 0x4B);
     private static readonly Color FaultColor = Color.FromArgb(0xFF, 0xE8, 0x5D, 0x5D);
     private static readonly Color IdleColor = Color.FromArgb(0xFF, 0x7C, 0x94, 0x90);
 
     private readonly BridgeStatus _status;
+    private readonly NotificationService _notifications;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly bool _animationsEnabled;
 
-    public MainWindow(BridgeStatus status)
+    public MainWindow(BridgeStatus status, NotificationService notifications, SettingsService settings)
     {
         InitializeComponent();
 
         _status = status;
+        _notifications = notifications;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _animationsEnabled = new UISettings().AnimationsEnabled;
 
         AppWindow.Resize(new SizeInt32(420, 520));
 
+        var toastHost = new ToastHost(notifications, settings)
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 16, 16),
+        };
+        Grid.SetRowSpan(toastHost, 4);
+        RootGrid.Children.Add(toastHost);
+
         _status.Changed += OnStatusChanged;
         Render();
 
         // Initialize theme toggle to reflect current requested theme
-        try
+        if (this.Content is FrameworkElement fe)
         {
-            var app = (App)Application.Current!;
-            // If root content is available, determine its RequestedTheme
-            if (app is not null && app is App)
-            {
-                if (this.Content is FrameworkElement fe)
-                {
-                    ThemeToggle.IsChecked = fe.RequestedTheme == ElementTheme.Dark;
-                    ThemeToggle.Content = fe.RequestedTheme == ElementTheme.Dark ? "Dark" : "Light";
-                }
-            }
-        }
-        catch
-        {
-            // best-effort only
+            bool isDark = fe.RequestedTheme == ElementTheme.Dark;
+            ThemeToggle.IsChecked = isDark;
+            ThemeToggleIcon.Glyph = isDark ? MoonGlyph : SunGlyph;
         }
     }
 
@@ -62,9 +67,23 @@ public sealed partial class MainWindow : Window
         if (sender is ToggleButton tb)
         {
             var theme = tb.IsChecked == true ? ElementTheme.Dark : ElementTheme.Light;
+            ThemeToggleIcon.Glyph = theme == ElementTheme.Dark ? MoonGlyph : SunGlyph;
             ((App)Application.Current!).SetAppTheme(theme);
-            tb.Content = theme == ElementTheme.Dark ? "Dark" : "Light";
         }
+    }
+
+    private void OnSettingsClicked(object? sender, RoutedEventArgs e)
+    {
+        ((App)Application.Current!).OpenSettingsWindow();
+    }
+
+    private void OnHistoryClicked(object? sender, RoutedEventArgs e)
+    {
+        var dialog = new NotificationHistoryDialog(_notifications)
+        {
+            XamlRoot = this.Content.XamlRoot,
+        };
+        _ = dialog.ShowAsync();
     }
 
     private void OnStatusChanged(object? sender, EventArgs e)
@@ -92,7 +111,7 @@ public sealed partial class MainWindow : Window
         BridgeLamp.Background = new SolidColorBrush(color);
         BridgeStateText.Text = label;
         BridgeStateText.Foreground = new SolidColorBrush(color);
-        BridgeUrlText.Text = _status.BridgeState == BridgeState.Running ? "http://127.0.0.1:5270/mcp" : "—";
+        BridgeUrlText.Text = _status.McpEndpoint;
 
         SetPulse((Storyboard)RootGrid.Resources["BridgePulseStoryboard"], pulsing);
     }
@@ -105,7 +124,7 @@ public sealed partial class MainWindow : Window
         DcsLamp.Background = new SolidColorBrush(color);
         DcsStateText.Text = connected ? "CONNECTED" : "DISCONNECTED";
         DcsStateText.Foreground = new SolidColorBrush(color);
-        DcsAddressText.Text = "127.0.0.1:1024";
+        DcsAddressText.Text = _status.DcsEndpoint;
     }
 
     private void RenderMission()

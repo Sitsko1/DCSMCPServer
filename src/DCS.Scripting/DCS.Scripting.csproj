@@ -12,8 +12,4 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DCS.Scripting\DCS.Scripting.csproj" />
-  </ItemGroup>
-
 </Project>
