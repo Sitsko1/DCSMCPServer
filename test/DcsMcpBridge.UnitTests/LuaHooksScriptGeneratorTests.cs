@@ -1,0 +1,62 @@
+using DCS.Scripting;
+
+public class LuaHooksScriptGeneratorTests
+{
+    private static readonly string Lua = LuaHooksScriptGenerator.Generate("127.0.0.1", 1024);
+
+    [Fact]
+    public void Generate_InterpolatesHostAndPort()
+    {
+        Assert.Contains("host = \"127.0.0.1\"", Lua);
+        Assert.Contains("port = 1024", Lua);
+    }
+
+    [Fact]
+    public void Generate_RegistersHooksCallbacks_InsteadOfExportLuaGlobals()
+    {
+        Assert.Contains("setUserCallbacks(", Lua);
+        Assert.Contains("onSimulationFrame", Lua);
+        Assert.Contains("onSimulationStart", Lua);
+        Assert.Contains("onSimulationStop", Lua);
+        // Hooks scripts must not define Export.lua's globals — that was the old integration.
+        Assert.DoesNotContain("function LuaExportStart", Lua);
+        Assert.DoesNotContain("function LuaExportAfterNextFrame", Lua);
+    }
+
+    [Fact]
+    public void Generate_ReadsMapAndMissionNameFromSimApi()
+    {
+        Assert.Contains("getMissionName()", Lua);
+        Assert.Contains("getCurrentMission()", Lua);
+        Assert.Contains(".theatre", Lua);
+        Assert.Contains("\"missionName\"", Lua);
+        Assert.Contains("\"terrain\"", Lua);
+    }
+
+    [Fact]
+    public void Generate_ResolvesReadableAircraftNameFromDcsDatabase()
+    {
+        // Export calls live under the Export. namespace in the Hooks environment.
+        Assert.Contains("Export.LoGetSelfData()", Lua);
+        Assert.Contains("getUnitTypeAttribute(", Lua);
+        Assert.Contains("\"DisplayName\"", Lua);
+    }
+
+    [Fact]
+    public void Generate_ToleratesSimApiBeingNamedDcs()
+    {
+        // Older DCS versions expose the same API as DCS.* rather than Sim.*.
+        Assert.Contains("local Sim = Sim or DCS", Lua);
+    }
+
+    [Fact]
+    public void Generate_DoesNotCallNonexistentLoGetMissionInfo() =>
+        Assert.DoesNotContain("LoGetMissionInfo", Lua);
+
+    [Fact]
+    public void Generate_ReportsNoMissionOnSimulationStop()
+    {
+        string stop = Lua[Lua.IndexOf("onSimulationStop")..];
+        Assert.Contains("{\"missionActive\":false}", stop);
+    }
+}

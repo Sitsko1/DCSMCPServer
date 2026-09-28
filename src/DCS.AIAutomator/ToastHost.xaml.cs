@@ -21,6 +21,9 @@ public sealed partial class ToastHost : UserControl
     private readonly SettingsService _settings;
     private readonly DispatcherQueue _dispatcherQueue;
 
+    private static readonly TimeSpan StaggerGap = TimeSpan.FromSeconds(1);
+    private DateTimeOffset _lastExpiry = DateTimeOffset.MinValue;
+
     public ToastHost(NotificationService service, SettingsService settings)
     {
         InitializeComponent();
@@ -89,10 +92,15 @@ public sealed partial class ToastHost : UserControl
 
         ToastStack.Children.Add(toast);
 
-        var timer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(Math.Max(1, _settings.ToastDurationSeconds)),
-        };
+        // Notifications arrive in bursts (bridge start → running → DCS connected → mission), so
+        // equal TTLs would expire together. Give each its full TTL, but never less than a gap
+        // after the previous toast's expiry, so a burst leaves one at a time, oldest first.
+        DateTimeOffset now = DateTimeOffset.Now;
+        DateTimeOffset expiry = now + TimeSpan.FromSeconds(Math.Max(1, _settings.ToastDurationSeconds));
+        if (expiry < _lastExpiry + StaggerGap) expiry = _lastExpiry + StaggerGap;
+        _lastExpiry = expiry;
+
+        var timer = new DispatcherTimer { Interval = expiry - now };
         timer.Tick += (_, _) =>
         {
             timer.Stop();

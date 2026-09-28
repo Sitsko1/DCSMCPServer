@@ -9,7 +9,7 @@ using WinRT.Interop;
 namespace DCS.AIAutomator;
 
 /// <summary>
-/// Settings for the MCP/DCS connection, DCS file paths, and Export.lua deployment. Changes are
+/// Settings for the MCP/DCS connection, DCS file paths, and Hooks script deployment. Changes are
 /// staged in the controls and only take effect (persisted + bridge restarted) on Save.
 /// </summary>
 public sealed partial class SettingsWindow : Window
@@ -56,6 +56,30 @@ public sealed partial class SettingsWindow : Window
         if (path is not null) SavedGamesPathBox.Text = path;
     }
 
+    private async void OnResetConnectionClicked(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"], // code-created dialogs don't get it implicitly
+            RequestedTheme = RootGrid.ActualTheme, // ContentDialog doesn't inherit the window root's theme
+            Title = "Reset connection settings?",
+            Content = $"MCP server port → {SettingsService.DefaultMcpPort}\n" +
+                      $"DCS host → {SettingsService.DefaultDcsHost}\n" +
+                      $"DCS port → {SettingsService.DefaultDcsPort}\n\n" +
+                      "Nothing is saved until you click Save.",
+            PrimaryButtonText = "Reset",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        // Staged like any other edit: Save persists and restarts the bridge, Cancel discards.
+        McpPortBox.Value = SettingsService.DefaultMcpPort;
+        DcsHostBox.Text = SettingsService.DefaultDcsHost;
+        DcsPortBox.Value = SettingsService.DefaultDcsPort;
+    }
+
     private void OnPathTextChanged(object sender, TextChangedEventArgs e) => ValidatePaths();
 
     /// <summary>Shows each path box's error (if any) under it; returns true when both are valid.</summary>
@@ -85,7 +109,7 @@ public sealed partial class SettingsWindow : Window
 
     private void OnDeployClicked(object sender, RoutedEventArgs e)
     {
-        var result = LuaExportDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
+        var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
         DeployStatusText.Text = result.Success ? result.Message : $"Failed: {result.Message}";
         _notifications.Show(
             result.Success ? "Lua scripts deployed" : "Lua deploy failed",
@@ -118,11 +142,12 @@ public sealed partial class SettingsWindow : Window
         try
         {
             await _restartBridgeAsync();
-            SaveStatusText.Text = "Saved.";
             _notifications.Show("Settings saved", "Bridge restarted with the new settings.", NotificationSeverity.Success);
+            Close(); // the toast in the main window confirms the save
         }
         catch (Exception ex)
         {
+            // Stay open so the error is visible and the offending value (e.g. a busy port) can be fixed.
             SaveStatusText.Text = $"Saved, but bridge restart failed: {ex.Message}";
             _notifications.Show("Bridge restart failed", ex.Message, NotificationSeverity.Error);
         }

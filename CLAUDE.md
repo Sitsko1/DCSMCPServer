@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 An MCP (Model Context Protocol) server that lets an LLM control DCS World (the flight
-simulator) by talking to its `Export.lua` TCP telemetry/command port, plus a WinUI 3 desktop
+simulator) through a TCP telemetry/command socket opened by a Lua script it deploys into DCS, plus a WinUI 3 desktop
 app that hosts it and shows live status. `DCS.AIAutomator` is the application users actually
 run; `DcsMcpBridge` and `DCS.Scripting` are libraries it (and tests) load in-process — neither
 has an entry point of its own.
@@ -17,6 +17,9 @@ reliably support stdio redirection anyway. `DcsMcpBridgeHost` runs the server ov
 status is just the host's lifetime state. Earlier stdio implementations (`src/DcsMcpServer`,
 `src/McpBridgeHostedService`, a stdio-exe `DcsMcpBridge`) were deleted on purpose.
 
+**Single-player only until v2.** Multiplayer capabilities are deferred to version 2 or later
+(maintainer decision) — don't build, test, or spec multiplayer behavior before then.
+
 ## Knowledge graph
 
 `graphify-out/` (gitignored) holds a prebuilt knowledge graph of this repo. For
@@ -27,14 +30,14 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 ## Layout
 
 - **`src/DCS.Scripting`** — class library (`IsAotCompatible=true`), everything DCS-specific.
-  Split from `DcsMcpBridge` so the app can call `LuaExportDeployer` without depending on the
+  Split from `DcsMcpBridge` so the app can call `LuaScriptDeployer` without depending on the
   MCP host.
   - `AddDcsScripting(status, dcsIp, dcsPort)` — the DI wiring: shared `BridgeStatus`
     singleton, `DcsConnection` as both `IDcsConnection` singleton and hosted service.
   - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
     (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Depends on
     `IDcsConnection` so tests use `FakeDcsConnection`.
-  - `DcsConnection` — `BackgroundService` owning the TCP connection to Export.lua (3s
+  - `DcsConnection` — `BackgroundService` owning the TCP connection to the DCS script (3s
     reconnect loop); sends Lua commands and parses each incoming line as telemetry into
     `BridgeStatus`. **Keep dependencies one-directional (tool → connection, never back).**
     A predecessor had a tool ↔ bridge cycle, and the circular DI resolution recursed with
@@ -43,7 +46,7 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     same instance survives host restarts (settings change → `StopAsync`/`StartAsync`);
     otherwise a UI subscribed to `Changed` goes stale. It also carries `McpEndpoint`/
     `DcsEndpoint` — render those in UI, never hardcoded literals.
-  - `LuaExportScriptGenerator` / `LuaExportDeployer` — generate and deploy the DCS-side
+  - `LuaHooksScriptGenerator` / `LuaScriptDeployer` — generate and deploy the DCS-side
     script (below). Pure string building / file I/O against a passed-in path.
 - **`src/DcsMcpBridge`** — class library, just the MCP composition root: `DcsMcpBridgeHost`
   builds a `WebApplication` (`AddDcsScripting`, `WithHttpTransport`, `WithTools<AtcTools>`,
@@ -73,36 +76,52 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 
 ## DCS-side telemetry contract (assumed, not fixed)
 
-`DcsTelemetryParser` expects one JSON object per line from Export.lua:
+`DcsTelemetryParser` expects one JSON object per line from the DCS script:
 
 ```json
-{"missionActive": true, "missionName": "...", "terrain": "...", "aircraft": "...", "multiplayer": false}
+{"missionActive": true, "missionName": "...", "terrain": "PersianGulf", "aircraft": "F/A-18C"}
 ```
 
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
-`CurrentMission`, a garbage line leaves prior state alone. The generator's Lua
-`string.format(...)` JSON and `DcsTelemetryMessage`/`DcsTelemetryParser` must be kept in sync
-by hand — nothing enforces it across the language boundary. `missionActive`/`missionName`/
-`terrain`/`aircraft` come from real Export APIs (`LoGetMissionInfo`/`LoGetSelfData`);
-`multiplayer` is speculative (`net.get_server_id()` is a Hooks-environment API) and will
-likely always report `false`.
+`CurrentMission`, a garbage line leaves prior state alone; missing fields default to
+"Unknown", and unknown fields are ignored. `terrain` arrives as DCS's internal theatre ID and
+the parser maps the non-obvious ones to their product names (`Falklands` → "South Atlantic").
+The generator's Lua `string.format(...)` JSON and `DcsTelemetryMessage`/`DcsTelemetryParser`
+must be kept in sync by hand — nothing enforces it across the language boundary.
 
-### Export.lua deployment: DCS is the socket server, this app is the client
+**Check every DCS API call against the stock docs before using it** —
+`DCS World/API/Sim_ControlAPI.md` (Hooks: `Sim.*`, callbacks, which `Export.Lo*` calls work
+there) and `DCS World/Scripts/Export.lua` (the `Lo*` list). The script once relied on
+`LoGetMissionInfo`, which doesn't exist; `pcall` swallowed the error and the app showed "No
+active mission" forever. A speculative `multiplayer` field was removed (multiplayer is deferred
+to v2).
 
-`DcsConnection` connects *out*, so the Lua side listens: a non-blocking LuaSocket server bound
-in `LuaExportStart`, accepting/draining once per frame in `LuaExportAfterNextFrame`
-(`loadstring()`-executing received commands, then writing one telemetry line). It **chains**
-onto any existing `LuaExportStart`/`AfterNextFrame`/`Stop` instead of overwriting them —
-DCS-BIOS, DCSFlightpanels, VAICOM etc. define the same hooks.
+### DCS-side script: a Hooks script, and DCS is the socket server
 
-`LuaExportDeployer` writes the script to `Scripts/DCS.AIAutomator/DCSMcpBridgeExport.lua` and
-only *appends* a guarded `dofile(...)` to `Scripts/Export.lua` if missing (backing up to
-`.bak` first). It's idempotent: already wired + identical companion script → "Already
-deployed", writes nothing.
+The DCS side is a **Hooks script** (`Saved Games\DCS\Scripts\Hooks\DCSMcpBridgeHooks.lua`), not
+an `Export.lua` companion. Only the Hooks (GUI) environment has `Sim.*` — mission name
+(`Sim.getMissionName()`), map (`Sim.getCurrentMission().mission.theatre`), and DCS's own
+aircraft display names (`Sim.getUnitTypeAttribute(type, "DisplayName")`) — while still exposing
+every Export call as `Export.Lo*`. DCS loads `Scripts/Hooks/*.lua` itself **at startup**
+(restart DCS after deploying), so nothing edits the user's `Export.lua` and there's no hook
+chaining with DCS-BIOS/Tacview/etc. `local Sim = Sim or DCS` covers older DCS versions.
 
-Verified against a live DCS session: deploy into Saved Games, the Lua listener, and the app's
-connection all work alongside WWT/Tacview/DCS-BIOS exports. Still unverified live: the
-`multiplayer` field and `send_atc_instruction` driven by a real MCP client.
+`DcsConnection` connects *out*, so the script listens: a non-blocking LuaSocket server, polled
+from `onSimulationFrame` (accept, `loadstring()`-execute queued commands, write one telemetry
+line). `onSimulationStart` caches mission name/map; `onSimulationStop` sends
+`missionActive:false`. The socket stays open between missions since the script lives as long
+as DCS. Commands therefore run in the **GUI** Lua state — not the Export or mission-scripting
+state.
+
+`LuaScriptDeployer` writes the Hooks script, and migrates installs from earlier versions: it
+removes our `dofile(...)` lines from `Export.lua` (other tools' lines untouched, `.bak` kept)
+and deletes the old `DCSMcpBridgeExport.lua` scripts — left in place they'd bind the same port.
+Idempotent: nothing to migrate + identical script → "Already deployed", writes nothing.
+
+Verified against a live DCS session (single-player, F/A-18C quick-start): the Hooks script
+deploys, DCS listens, the app connects, and the readout shows the correct mission name, map
+and aircraft display name. Still unverified live: `send_atc_instruction` via a real MCP client
+(and it's known broken — see issue #4).
 
 The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
 must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a

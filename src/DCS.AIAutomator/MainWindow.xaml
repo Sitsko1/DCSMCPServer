@@ -97,7 +97,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="88" />
@@ -113,8 +112,6 @@
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="TERRAIN" Style="{StaticResource FieldLabelStyle}" />
                 <TextBlock x:Name="TerrainText" Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="MODE" Style="{StaticResource FieldLabelStyle}" />
-                <TextBlock x:Name="ModeText" Grid.Row="3" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
             </Grid>
         </Grid>
     </Grid>

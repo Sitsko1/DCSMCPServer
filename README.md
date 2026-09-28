@@ -2,25 +2,25 @@
 
 A desktop app that lets an LLM control [DCS World](https://www.digitalcombatsim.com/) (the
 flight simulator) through the [Model Context Protocol](https://modelcontextprotocol.io/),
-bridging tool calls to DCS's `Export.lua` socket.
+bridging tool calls to a small Lua script the app deploys into DCS.
 
 ## What it does
 
 - Runs an MCP server ([`ModelContextProtocol.AspNetCore`](https://github.com/modelcontextprotocol/csharp-sdk))
   in-process, over HTTP, exposing a `send_atc_instruction` tool that transmits ATC-style
   instructions to aircraft in a running mission.
-- Maintains a persistent connection to DCS's `Export.lua` telemetry socket
-  (`127.0.0.1:1024` by default).
+- Maintains a persistent connection to that script's telemetry socket (`127.0.0.1:1024` by
+  default).
 - Shows live status in its window: whether the MCP bridge is up, whether DCS is connected, and
-  — when a mission is active — the aircraft, mission name, terrain, and single/multiplayer mode.
+  — when a mission is active — the aircraft (by its DCS display name), mission name, and map.
 - Settings window (gear icon, top-right) configures the MCP server port, the DCS host/port, and
-  DCS's install/Saved Games paths, and can generate + deploy the `Export.lua` companion script
-  DCS needs into the Saved Games `Scripts` folder (safe to run alongside other Export.lua tools —
-  it appends rather than overwrites). Companion scripts are written under
-  `Scripts\DCS.AIAutomator\` so they never collide with other tools' files. Deploy is
-  idempotent: if `Export.lua` is already wired and the companion script is present and
-  up-to-date, it reports "Already deployed" and writes nothing. Saving restarts the bridge with
-  the new settings.
+  DCS's install/Saved Games paths, and can generate + deploy the DCS-side script as
+  `Saved Games\DCS\Scripts\Hooks\DCSMcpBridgeHooks.lua`. DCS loads Hooks scripts by itself at
+  startup, so `Export.lua` is never modified and other export tools (DCS-BIOS, Tacview, …) are
+  unaffected; restart DCS after deploying. Deploying also removes the `Export.lua`-based script
+  earlier versions installed (keeping a `.bak`). Deploy is idempotent: an up-to-date script
+  reports "Already deployed" and writes nothing. Saving restarts the bridge with the new
+  settings.
 
 ## Running it
 
