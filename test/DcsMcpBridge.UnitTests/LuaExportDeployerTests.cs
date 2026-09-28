@@ -66,6 +66,24 @@ public class LuaExportDeployerTests : IDisposable
     }
 
     [Fact]
+    public void Deploy_RewiresLegacyDofileToAppSubdirectory_WhenPreviousVersionWasDeployed()
+    {
+        // Pre-subdirectory versions deployed the script directly under Scripts\.
+        const string legacyLine = "dofile(lfs.writedir()..[[Scripts\\DCSMcpBridgeExport.lua]])";
+        Directory.CreateDirectory(ScriptsDir);
+        File.WriteAllText(ExportLuaPath, "dofile(lfs.writedir()..[[Scripts\\OtherTool.lua]])\n" + legacyLine + "\n");
+
+        var result = LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+
+        Assert.True(result.Success);
+        string exportLua = File.ReadAllText(ExportLuaPath);
+        Assert.DoesNotContain(legacyLine, exportLua);
+        Assert.Contains("Scripts\\DCS.AIAutomator\\DCSMcpBridgeExport.lua", exportLua);
+        Assert.Contains("OtherTool.lua", exportLua);
+        Assert.Contains(legacyLine, File.ReadAllText(ExportLuaPath + ".bak"));
+    }
+
+    [Fact]
     public void Deploy_RewritesScript_WhenWiredButScriptIsStale()
     {
         LuaExportDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);

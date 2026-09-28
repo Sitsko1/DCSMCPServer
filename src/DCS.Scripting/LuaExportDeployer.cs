@@ -14,6 +14,8 @@ public static class LuaExportDeployer
     public const string ExportScriptFileName = "DCSMcpBridgeExport.lua";
     public const string AppSubdirectoryName = "DCS.AIAutomator";
     private const string DofileLine = "dofile(lfs.writedir()..[[Scripts\\DCS.AIAutomator\\DCSMcpBridgeExport.lua]])";
+    // Written by versions before the per-app subdirectory; rewritten to DofileLine on deploy.
+    private const string LegacyDofileLine = "dofile(lfs.writedir()..[[Scripts\\DCSMcpBridgeExport.lua]])";
 
     public sealed record DeployResult(bool Success, string Message);
 
@@ -30,7 +32,8 @@ public static class LuaExportDeployer
 
             // 1. Does Export.lua exist, and is it already wired to our companion script?
             bool exportLuaExists = File.Exists(exportLuaPath);
-            bool alreadyWired = exportLuaExists && File.ReadAllText(exportLuaPath).Contains(ExportScriptFileName);
+            string exportLua = exportLuaExists ? File.ReadAllText(exportLuaPath) : "";
+            bool alreadyWired = exportLua.Contains(DofileLine);
 
             if (alreadyWired)
             {
@@ -55,7 +58,15 @@ public static class LuaExportDeployer
             else if (!alreadyWired)
             {
                 File.Copy(exportLuaPath, exportLuaPath + ".bak", overwrite: true);
-                File.AppendAllText(exportLuaPath, "\n" + DofileLine + "\n");
+                if (exportLua.Contains(LegacyDofileLine))
+                {
+                    // Replace rather than append, or both scripts would run and fight over the port.
+                    File.WriteAllText(exportLuaPath, exportLua.Replace(LegacyDofileLine, DofileLine));
+                }
+                else
+                {
+                    File.AppendAllText(exportLuaPath, "\n" + DofileLine + "\n");
+                }
             }
 
             return new DeployResult(true, $"Deployed to {appDir}");
