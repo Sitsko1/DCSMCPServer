@@ -1,0 +1,10 @@
+F:\All-Data\Dev\Git\DCSMCPServer\CLAUDE.md
+F:\All-Data\Dev\Git\DCSMCPServer\README.md
+F:\All-Data\Dev\Git\DCSMCPServer\src\DcsMcpBridge\README.md
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\LockScreenLogo.scale-200.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\SplashScreen.scale-200.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\Square150x150Logo.scale-200.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\Square44x44Logo.scale-200.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\StoreLogo.png
+F:\All-Data\Dev\Git\DCSMCPServer\src\DCS.AIAutomator\Assets\Wide310x150Logo.scale-200.png

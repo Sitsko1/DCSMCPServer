@@ -1,0 +1,4125 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "mcp_server_flow",
+        "label": "MCP Server Implementation Flow",
+        "nodes": [
+          "dcsmcpbridge_dcsmcpbridgehost",
+          "dcsmcpbridge_atctools",
+          "dcsmcpbridge_dcsconnection",
+          "dcsmcpbridge_idcsconnection"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "CLAUDE.md"
+      },
+      {
+        "id": "dcs_telemetry_flow",
+        "label": "DCS Telemetry Processing",
+        "nodes": [
+          "dcs_world_export_lua",
+          "dcsmcpbridge_dcsconnection",
+          "dcsmcpbridge_dcstelemetryparser",
+          "dcsmcpbridge_bridgestatus"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "CLAUDE.md"
+      },
+      {
+        "id": "winui_app_structure",
+        "label": "WinUI Application Components",
+        "nodes": [
+          "dcs_aiautomator_app",
+          "dcs_aiautomator_mainwindow",
+          "dcs_aiautomator_settingswindow",
+          "dcs_aiautomator_settingsservice"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "CLAUDE.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "DcsMcp.slnx",
+      "file_type": "code",
+      "source_file": "DcsMcp.slnx",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcsmcp",
+      "community": 0,
+      "norm_label": "dcsmcp.slnx"
+    },
+    {
+      "label": "DCS.AIAutomator.csproj",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcs_aiautomator_dcs_aiautomator",
+      "community": 0,
+      "norm_label": "dcs.aiautomator.csproj"
+    },
+    {
+      "label": "DCS.Scripting.csproj",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcs_scripting_dcs_scripting",
+      "community": 0,
+      "norm_label": "dcs.scripting.csproj"
+    },
+    {
+      "label": "DcsMcpBridge.csproj",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridge",
+      "community": 0,
+      "norm_label": "dcsmcpbridge.csproj"
+    },
+    {
+      "label": "DcsMcpBridge.IntegrationTests.csproj",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "community": 0,
+      "norm_label": "dcsmcpbridge.integrationtests.csproj"
+    },
+    {
+      "label": "DcsMcpBridge.UnitTests.csproj",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "community": 0,
+      "norm_label": "dcsmcpbridge.unittests.csproj"
+    },
+    {
+      "label": "App.xaml.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml",
+      "community": 6,
+      "norm_label": "app.xaml.cs"
+    },
+    {
+      "label": "App",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app",
+      "community": 6,
+      "norm_label": "app"
+    },
+    {
+      "label": "Application",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "application",
+      "community": 6,
+      "norm_label": "application"
+    },
+    {
+      "label": "Window",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "window",
+      "community": 6,
+      "norm_label": "window"
+    },
+    {
+      "label": "ElementTheme",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "elementtheme",
+      "community": 6,
+      "norm_label": "elementtheme"
+    },
+    {
+      "label": ".SetAppTheme()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_setapptheme",
+      "community": 6,
+      "norm_label": ".setapptheme()"
+    },
+    {
+      "label": ".ApplyTheme()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_applytheme",
+      "community": 6,
+      "norm_label": ".applytheme()"
+    },
+    {
+      "label": ".OnLaunched()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_onlaunched",
+      "community": 6,
+      "norm_label": ".onlaunched()"
+    },
+    {
+      "label": "LaunchActivatedEventArgs",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "launchactivatedeventargs",
+      "community": 6,
+      "norm_label": "launchactivatedeventargs"
+    },
+    {
+      "label": ".StartBridgeAsync()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_startbridgeasync",
+      "community": 6,
+      "norm_label": ".startbridgeasync()"
+    },
+    {
+      "label": "Task",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "task",
+      "community": 4,
+      "norm_label": "task"
+    },
+    {
+      "label": ".OpenSettingsWindow()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_opensettingswindow",
+      "community": 6,
+      "norm_label": ".opensettingswindow()"
+    },
+    {
+      "label": ".RestartBridgeAsync()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_restartbridgeasync",
+      "community": 4,
+      "norm_label": ".restartbridgeasync()"
+    },
+    {
+      "label": ".OnWindowClosed()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L82",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_app_xaml_app_onwindowclosed",
+      "community": 6,
+      "norm_label": ".onwindowclosed()"
+    },
+    {
+      "label": "WindowEventArgs",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "windoweventargs",
+      "community": 6,
+      "norm_label": "windoweventargs"
+    },
+    {
+      "label": "net10.0-windows10.0.19041.0",
+      "file_type": "concept",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "framework_net10_0_windows10_0_19041_0",
+      "community": 0,
+      "norm_label": "net10.0-windows10.0.19041.0"
+    },
+    {
+      "label": "Microsoft.Windows.SDK.BuildTools",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "nuget_microsoft_windows_sdk_buildtools",
+      "community": 0,
+      "norm_label": "microsoft.windows.sdk.buildtools"
+    },
+    {
+      "label": "Microsoft.WindowsAppSDK",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "nuget_microsoft_windowsappsdk",
+      "community": 0,
+      "norm_label": "microsoft.windowsappsdk"
+    },
+    {
+      "label": "Microsoft.NET.Sdk",
+      "file_type": "concept",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcs_aiautomator_dcs_aiautomator_csproj_sdk_microsoft_net_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.sdk"
+    },
+    {
+      "label": "MainWindow.xaml.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml",
+      "community": 3,
+      "norm_label": "mainwindow.xaml.cs"
+    },
+    {
+      "label": "MainWindow",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "community": 3,
+      "norm_label": "mainwindow"
+    },
+    {
+      "label": "string",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "string",
+      "community": 9,
+      "norm_label": "string"
+    },
+    {
+      "label": "Color",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "color",
+      "community": 3,
+      "norm_label": "color"
+    },
+    {
+      "label": "DispatcherQueue",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "dispatcherqueue",
+      "community": 3,
+      "norm_label": "dispatcherqueue"
+    },
+    {
+      "label": "bool",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "bool",
+      "community": 3,
+      "norm_label": "bool"
+    },
+    {
+      "label": ".OnThemeToggleClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_onthemetoggleclicked",
+      "community": 5,
+      "norm_label": ".onthemetoggleclicked()"
+    },
+    {
+      "label": "RoutedEventArgs",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "routedeventargs",
+      "community": 5,
+      "norm_label": "routedeventargs"
+    },
+    {
+      "label": ".OnSettingsClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_onsettingsclicked",
+      "community": 5,
+      "norm_label": ".onsettingsclicked()"
+    },
+    {
+      "label": ".OnStatusChanged()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_onstatuschanged",
+      "community": 3,
+      "norm_label": ".onstatuschanged()"
+    },
+    {
+      "label": "EventArgs",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "eventargs",
+      "community": 3,
+      "norm_label": "eventargs"
+    },
+    {
+      "label": ".Render()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_render",
+      "community": 3,
+      "norm_label": ".render()"
+    },
+    {
+      "label": ".RenderBridge()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderbridge",
+      "community": 3,
+      "norm_label": ".renderbridge()"
+    },
+    {
+      "label": ".RenderDcs()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L99",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderdcs",
+      "community": 3,
+      "norm_label": ".renderdcs()"
+    },
+    {
+      "label": ".RenderMission()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L110",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_rendermission",
+      "community": 3,
+      "norm_label": ".rendermission()"
+    },
+    {
+      "label": ".SetPulse()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_mainwindow_xaml_mainwindow_setpulse",
+      "community": 3,
+      "norm_label": ".setpulse()"
+    },
+    {
+      "label": "Storyboard",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "storyboard",
+      "community": 3,
+      "norm_label": "storyboard"
+    },
+    {
+      "label": "SettingsService.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingsservice",
+      "community": 7,
+      "norm_label": "settingsservice.cs"
+    },
+    {
+      "label": "SettingsService",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingsservice_settingsservice",
+      "community": 7,
+      "norm_label": "settingsservice"
+    },
+    {
+      "label": "ApplicationDataContainer",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "applicationdatacontainer",
+      "community": 7,
+      "norm_label": "applicationdatacontainer"
+    },
+    {
+      "label": ".DefaultSavedGamesPath()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L48",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingsservice_settingsservice_defaultsavedgamespath",
+      "community": 7,
+      "norm_label": ".defaultsavedgamespath()"
+    },
+    {
+      "label": ".GetString()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingsservice_settingsservice_getstring",
+      "community": 7,
+      "norm_label": ".getstring()"
+    },
+    {
+      "label": ".GetInt()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingsservice_settingsservice_getint",
+      "community": 7,
+      "norm_label": ".getint()"
+    },
+    {
+      "label": "SettingsWindow.xaml.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml",
+      "community": 5,
+      "norm_label": "settingswindow.xaml.cs"
+    },
+    {
+      "label": "SettingsWindow",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "community": 5,
+      "norm_label": "settingswindow"
+    },
+    {
+      "label": "Func",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "func",
+      "community": 5,
+      "norm_label": "func"
+    },
+    {
+      "label": ".OnSectionChanged()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsectionchanged",
+      "community": 5,
+      "norm_label": ".onsectionchanged()"
+    },
+    {
+      "label": "NavigationView",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "navigationview",
+      "community": 5,
+      "norm_label": "navigationview"
+    },
+    {
+      "label": "NavigationViewSelectionChangedEventArgs",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "navigationviewselectionchangedeventargs",
+      "community": 5,
+      "norm_label": "navigationviewselectionchangedeventargs"
+    },
+    {
+      "label": ".OnBrowseInstallPathClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowseinstallpathclicked",
+      "community": 5,
+      "norm_label": ".onbrowseinstallpathclicked()"
+    },
+    {
+      "label": ".OnBrowseSavedGamesPathClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowsesavedgamespathclicked",
+      "community": 5,
+      "norm_label": ".onbrowsesavedgamespathclicked()"
+    },
+    {
+      "label": ".PickFolderAsync()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_pickfolderasync",
+      "community": 5,
+      "norm_label": ".pickfolderasync()"
+    },
+    {
+      "label": ".OnDeployClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L65",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_ondeployclicked",
+      "community": 5,
+      "norm_label": ".ondeployclicked()"
+    },
+    {
+      "label": ".OnSaveClicked()",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L71",
+      "_origin": "ast",
+      "id": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsaveclicked",
+      "community": 5,
+      "norm_label": ".onsaveclicked()"
+    },
+    {
+      "label": "AtcTools.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_atctools",
+      "community": 8,
+      "norm_label": "atctools.cs"
+    },
+    {
+      "label": "AtcJsonContext",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "dcs_scripting_atctools_atcjsoncontext",
+      "community": 8,
+      "norm_label": "atcjsoncontext"
+    },
+    {
+      "label": "JsonSerializerContext",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "jsonserializercontext",
+      "community": 8,
+      "norm_label": "jsonserializercontext"
+    },
+    {
+      "label": "AtcTools",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "dcs_scripting_atctools_atctools",
+      "community": 2,
+      "norm_label": "atctools"
+    },
+    {
+      "label": ".SendAtcInstruction()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "dcs_scripting_atctools_atctools_sendatcinstruction",
+      "community": 2,
+      "norm_label": ".sendatcinstruction()"
+    },
+    {
+      "label": "AtcAction",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "atcaction",
+      "community": 2,
+      "norm_label": "atcaction"
+    },
+    {
+      "label": "McpServerTool",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "mcpservertool",
+      "community": 2,
+      "norm_label": "mcpservertool"
+    },
+    {
+      "label": "Description",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "description",
+      "community": 2,
+      "norm_label": "description"
+    },
+    {
+      "label": "BridgeStatus.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_bridgestatus",
+      "community": 3,
+      "norm_label": "bridgestatus.cs"
+    },
+    {
+      "label": "BridgeStatus",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "dcs_scripting_bridgestatus_bridgestatus",
+      "community": 3,
+      "norm_label": "bridgestatus"
+    },
+    {
+      "label": "BridgeState",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "bridgestate",
+      "community": 3,
+      "norm_label": "bridgestate"
+    },
+    {
+      "label": "MissionInfo",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "missioninfo",
+      "community": 8,
+      "norm_label": "missioninfo"
+    },
+    {
+      "label": "net10.0",
+      "file_type": "concept",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcs_scripting_dcs_scripting_csproj_framework_net10_0",
+      "community": 0,
+      "norm_label": "net10.0"
+    },
+    {
+      "label": "ModelContextProtocol.AspNetCore",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcs_scripting_dcs_scripting_csproj_nuget_modelcontextprotocol_aspnetcore",
+      "community": 0,
+      "norm_label": "modelcontextprotocol.aspnetcore"
+    },
+    {
+      "label": "Microsoft.NET.Sdk",
+      "file_type": "concept",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcs_scripting_dcs_scripting_csproj_sdk_microsoft_net_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.sdk"
+    },
+    {
+      "label": "DcsConnection.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection",
+      "community": 2,
+      "norm_label": "dcsconnection.cs"
+    },
+    {
+      "label": "DcsConnection",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection_dcsconnection",
+      "community": 2,
+      "norm_label": "dcsconnection"
+    },
+    {
+      "label": "BackgroundService",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "backgroundservice",
+      "community": 2,
+      "norm_label": "backgroundservice"
+    },
+    {
+      "label": "ILogger",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "ilogger",
+      "community": 2,
+      "norm_label": "ilogger"
+    },
+    {
+      "label": "int",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "int",
+      "community": 2,
+      "norm_label": "int"
+    },
+    {
+      "label": "TcpClient",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "tcpclient",
+      "community": 2,
+      "norm_label": "tcpclient"
+    },
+    {
+      "label": "NetworkStream",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "networkstream",
+      "community": 2,
+      "norm_label": "networkstream"
+    },
+    {
+      "label": ".SendLuaCommand()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection_dcsconnection_sendluacommand",
+      "community": 2,
+      "norm_label": ".sendluacommand()"
+    },
+    {
+      "label": ".ExecuteAsync()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection_dcsconnection_executeasync",
+      "community": 2,
+      "norm_label": ".executeasync()"
+    },
+    {
+      "label": "CancellationToken",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "cancellationtoken",
+      "community": 4,
+      "norm_label": "cancellationtoken"
+    },
+    {
+      "label": ".CleanConnection()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection_dcsconnection_cleanconnection",
+      "community": 2,
+      "norm_label": ".cleanconnection()"
+    },
+    {
+      "label": ".Dispose()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsconnection_dcsconnection_dispose",
+      "community": 2,
+      "norm_label": ".dispose()"
+    },
+    {
+      "label": "DcsScriptingServiceCollectionExtensions.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsscriptingservicecollectionextensions",
+      "community": 3,
+      "norm_label": "dcsscriptingservicecollectionextensions.cs"
+    },
+    {
+      "label": "DcsScriptingServiceCollectionExtensions",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions",
+      "community": 3,
+      "norm_label": "dcsscriptingservicecollectionextensions"
+    },
+    {
+      "label": ".AddDcsScripting()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions_adddcsscripting",
+      "community": 3,
+      "norm_label": ".adddcsscripting()"
+    },
+    {
+      "label": "IServiceCollection",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "iservicecollection",
+      "community": 3,
+      "norm_label": "iservicecollection"
+    },
+    {
+      "label": "DcsTelemetryParser.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcstelemetryparser",
+      "community": 8,
+      "norm_label": "dcstelemetryparser.cs"
+    },
+    {
+      "label": "DcsTelemetryMessage",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcstelemetryparser_dcstelemetrymessage",
+      "community": 8,
+      "norm_label": "dcstelemetrymessage"
+    },
+    {
+      "label": "DcsTelemetryJsonContext",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcstelemetryparser_dcstelemetryjsoncontext",
+      "community": 8,
+      "norm_label": "dcstelemetryjsoncontext"
+    },
+    {
+      "label": "DcsTelemetryParser",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcstelemetryparser_dcstelemetryparser",
+      "community": 8,
+      "norm_label": "dcstelemetryparser"
+    },
+    {
+      "label": ".TryParse()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L41",
+      "_origin": "ast",
+      "id": "dcs_scripting_dcstelemetryparser_dcstelemetryparser_tryparse",
+      "community": 8,
+      "norm_label": ".tryparse()"
+    },
+    {
+      "label": "IDcsConnection.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/IDcsConnection.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_idcsconnection",
+      "community": 2,
+      "norm_label": "idcsconnection.cs"
+    },
+    {
+      "label": "IDcsConnection",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/IDcsConnection.cs",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "dcs_scripting_idcsconnection_idcsconnection",
+      "community": 2,
+      "norm_label": "idcsconnection"
+    },
+    {
+      "label": ".SendLuaCommand()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/IDcsConnection.cs",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "dcs_scripting_idcsconnection_idcsconnection_sendluacommand",
+      "community": 2,
+      "norm_label": ".sendluacommand()"
+    },
+    {
+      "label": "LuaExportDeployer.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportdeployer",
+      "community": 9,
+      "norm_label": "luaexportdeployer.cs"
+    },
+    {
+      "label": "LuaExportDeployer",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "community": 9,
+      "norm_label": "luaexportdeployer"
+    },
+    {
+      "label": ".Deploy()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportdeployer_luaexportdeployer_deploy",
+      "community": 9,
+      "norm_label": ".deploy()"
+    },
+    {
+      "label": "DeployResult",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "deployresult",
+      "community": 9,
+      "norm_label": "deployresult"
+    },
+    {
+      "label": "LuaExportScriptGenerator.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportScriptGenerator.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportscriptgenerator",
+      "community": 9,
+      "norm_label": "luaexportscriptgenerator.cs"
+    },
+    {
+      "label": "LuaExportScriptGenerator",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportScriptGenerator.cs",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator",
+      "community": 9,
+      "norm_label": "luaexportscriptgenerator"
+    },
+    {
+      "label": ".Generate()",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/LuaExportScriptGenerator.cs",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator_generate",
+      "community": 9,
+      "norm_label": ".generate()"
+    },
+    {
+      "label": "MissionInfo.cs",
+      "file_type": "code",
+      "source_file": "src/DCS.Scripting/MissionInfo.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcs_scripting_missioninfo",
+      "community": 11,
+      "norm_label": "missioninfo.cs"
+    },
+    {
+      "label": "net10.0",
+      "file_type": "concept",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcsmcpbridge_dcsmcpbridge_csproj_framework_net10_0",
+      "community": 0,
+      "norm_label": "net10.0"
+    },
+    {
+      "label": "ModelContextProtocol.AspNetCore",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcsmcpbridge_dcsmcpbridge_csproj_nuget_modelcontextprotocol_aspnetcore",
+      "community": 0,
+      "norm_label": "modelcontextprotocol.aspnetcore"
+    },
+    {
+      "label": "Microsoft.NET.Sdk",
+      "file_type": "concept",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "src_dcsmcpbridge_dcsmcpbridge_csproj_sdk_microsoft_net_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.sdk"
+    },
+    {
+      "label": "DcsMcpBridgeHost.cs",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridgehost",
+      "community": 2,
+      "norm_label": "dcsmcpbridgehost.cs"
+    },
+    {
+      "label": "DcsMcpBridgeHost",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "community": 4,
+      "norm_label": "dcsmcpbridgehost"
+    },
+    {
+      "label": "IAsyncDisposable",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "iasyncdisposable",
+      "community": 4,
+      "norm_label": "iasyncdisposable"
+    },
+    {
+      "label": "WebApplication",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "webapplication",
+      "community": 4,
+      "norm_label": "webapplication"
+    },
+    {
+      "label": ".StartAsync()",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_startasync",
+      "community": 4,
+      "norm_label": ".startasync()"
+    },
+    {
+      "label": ".StopAsync()",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L79",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_stopasync",
+      "community": 4,
+      "norm_label": ".stopasync()"
+    },
+    {
+      "label": ".DisposeAsync()",
+      "file_type": "code",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_disposeasync",
+      "community": 4,
+      "norm_label": ".disposeasync()"
+    },
+    {
+      "label": "ValueTask",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "valuetask",
+      "community": 4,
+      "norm_label": "valuetask"
+    },
+    {
+      "label": "net10.0",
+      "file_type": "concept",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_framework_net10_0",
+      "community": 0,
+      "norm_label": "net10.0"
+    },
+    {
+      "label": "coverlet.collector",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_coverlet_collector",
+      "community": 0,
+      "norm_label": "coverlet.collector"
+    },
+    {
+      "label": "Microsoft.NET.Test.Sdk",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_microsoft_net_test_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.test.sdk"
+    },
+    {
+      "label": "xunit",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_xunit",
+      "community": 0,
+      "norm_label": "xunit"
+    },
+    {
+      "label": "xunit.runner.visualstudio",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_xunit_runner_visualstudio",
+      "community": 0,
+      "norm_label": "xunit.runner.visualstudio"
+    },
+    {
+      "label": "Microsoft.NET.Sdk",
+      "file_type": "concept",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_sdk_microsoft_net_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.sdk"
+    },
+    {
+      "label": "McpServerIntegrationTests.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests",
+      "community": 4,
+      "norm_label": "mcpserverintegrationtests.cs"
+    },
+    {
+      "label": "McpServerIntegrationTests",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "community": 4,
+      "norm_label": "mcpserverintegrationtests"
+    },
+    {
+      "label": "IAsyncLifetime",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "iasynclifetime",
+      "community": 4,
+      "norm_label": "iasynclifetime"
+    },
+    {
+      "label": "McpClient",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "mcpclient",
+      "community": 4,
+      "norm_label": "mcpclient"
+    },
+    {
+      "label": ".InitializeAsync()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_initializeasync",
+      "community": 4,
+      "norm_label": ".initializeasync()"
+    },
+    {
+      "label": ".DisposeAsync()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_disposeasync",
+      "community": 4,
+      "norm_label": ".disposeasync()"
+    },
+    {
+      "label": ".ListTools_IncludesSendAtcInstruction()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_listtools_includessendatcinstruction",
+      "community": 4,
+      "norm_label": ".listtools_includessendatcinstruction()"
+    },
+    {
+      "label": "Fact",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "fact",
+      "community": 1,
+      "norm_label": "fact"
+    },
+    {
+      "label": ".CallTool_SendAtcInstruction_ReportsDcsDown()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_calltool_sendatcinstruction_reportsdcsdown",
+      "community": 4,
+      "norm_label": ".calltool_sendatcinstruction_reportsdcsdown()"
+    },
+    {
+      "label": "AtcToolsTests.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests",
+      "community": 1,
+      "norm_label": "atctoolstests.cs"
+    },
+    {
+      "label": "AtcToolsTests",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "community": 1,
+      "norm_label": "atctoolstests"
+    },
+    {
+      "label": ".SendAtcInstruction_FormatsExpectedLuaCommand()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_formatsexpectedluacommand",
+      "community": 1,
+      "norm_label": ".sendatcinstruction_formatsexpectedluacommand()"
+    },
+    {
+      "label": ".SendAtcInstruction_DefaultsHeadingTo360()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_defaultsheadingto360",
+      "community": 1,
+      "norm_label": ".sendatcinstruction_defaultsheadingto360()"
+    },
+    {
+      "label": ".SendAtcInstruction_ReturnsSuccessMessage_WhenConnectionSucceeds()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnssuccessmessage_whenconnectionsucceeds",
+      "community": 1,
+      "norm_label": ".sendatcinstruction_returnssuccessmessage_whenconnectionsucceeds()"
+    },
+    {
+      "label": ".SendAtcInstruction_ReturnsErrorMessage_WhenConnectionFails()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnserrormessage_whenconnectionfails",
+      "community": 1,
+      "norm_label": ".sendatcinstruction_returnserrormessage_whenconnectionfails()"
+    },
+    {
+      "label": "net10.0",
+      "file_type": "concept",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_framework_net10_0",
+      "community": 0,
+      "norm_label": "net10.0"
+    },
+    {
+      "label": "coverlet.collector",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_coverlet_collector",
+      "community": 0,
+      "norm_label": "coverlet.collector"
+    },
+    {
+      "label": "Microsoft.NET.Test.Sdk",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_microsoft_net_test_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.test.sdk"
+    },
+    {
+      "label": "xunit",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_xunit",
+      "community": 0,
+      "norm_label": "xunit"
+    },
+    {
+      "label": "xunit.runner.visualstudio",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_xunit_runner_visualstudio",
+      "community": 0,
+      "norm_label": "xunit.runner.visualstudio"
+    },
+    {
+      "label": "Microsoft.NET.Sdk",
+      "file_type": "concept",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_sdk_microsoft_net_sdk",
+      "community": 0,
+      "norm_label": "microsoft.net.sdk"
+    },
+    {
+      "label": "DcsTelemetryParserTests.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests",
+      "community": 1,
+      "norm_label": "dcstelemetryparsertests.cs"
+    },
+    {
+      "label": "DcsTelemetryParserTests",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "community": 1,
+      "norm_label": "dcstelemetryparsertests"
+    },
+    {
+      "label": ".TryParse_ActiveMission_ReturnsPopulatedMissionInfo()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemission_returnspopulatedmissioninfo",
+      "community": 1,
+      "norm_label": ".tryparse_activemission_returnspopulatedmissioninfo()"
+    },
+    {
+      "label": ".TryParse_InactiveMission_ReturnsTrueWithNullMission()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_inactivemission_returnstruewithnullmission",
+      "community": 1,
+      "norm_label": ".tryparse_inactivemission_returnstruewithnullmission()"
+    },
+    {
+      "label": ".TryParse_MalformedJson_ReturnsFalse()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_malformedjson_returnsfalse",
+      "community": 1,
+      "norm_label": ".tryparse_malformedjson_returnsfalse()"
+    },
+    {
+      "label": ".TryParse_ActiveMissionMissingOptionalFields_DefaultsToUnknown()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemissionmissingoptionalfields_defaultstounknown",
+      "community": 1,
+      "norm_label": ".tryparse_activemissionmissingoptionalfields_defaultstounknown()"
+    },
+    {
+      "label": "FakeDcsConnection.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_fakedcsconnection",
+      "community": 2,
+      "norm_label": "fakedcsconnection.cs"
+    },
+    {
+      "label": "FakeDcsConnection",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection",
+      "community": 2,
+      "norm_label": "fakedcsconnection"
+    },
+    {
+      "label": ".SendLuaCommand()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection_sendluacommand",
+      "community": 2,
+      "norm_label": ".sendluacommand()"
+    },
+    {
+      "label": "LuaExportDeployerTests.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests",
+      "community": 1,
+      "norm_label": "luaexportdeployertests.cs"
+    },
+    {
+      "label": "LuaExportDeployerTests",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "community": 1,
+      "norm_label": "luaexportdeployertests"
+    },
+    {
+      "label": "IDisposable",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "idisposable",
+      "community": 1,
+      "norm_label": "idisposable"
+    },
+    {
+      "label": ".Dispose()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_dispose",
+      "community": 1,
+      "norm_label": ".dispose()"
+    },
+    {
+      "label": ".Deploy_WritesExportScriptAndCreatesExportLua_WhenNoneExists()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_writesexportscriptandcreatesexportlua_whennoneexists",
+      "community": 1,
+      "norm_label": ".deploy_writesexportscriptandcreatesexportlua_whennoneexists()"
+    },
+    {
+      "label": ".Deploy_AppendsDofileAndBacksUpExistingExportLua_WhenNotAlreadyWired()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_appendsdofileandbacksupexistingexportlua_whennotalreadywired",
+      "community": 1,
+      "norm_label": ".deploy_appendsdofileandbacksupexistingexportlua_whennotalreadywired()"
+    },
+    {
+      "label": ".Deploy_IsIdempotent_DoesNotDuplicateDofileOrRewriteBackup()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_isidempotent_doesnotduplicatedofileorrewritebackup",
+      "community": 1,
+      "norm_label": ".deploy_isidempotent_doesnotduplicatedofileorrewritebackup()"
+    },
+    {
+      "label": "LuaExportScriptGeneratorTests.cs",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportscriptgeneratortests",
+      "community": 1,
+      "norm_label": "luaexportscriptgeneratortests.cs"
+    },
+    {
+      "label": "LuaExportScriptGeneratorTests",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests",
+      "community": 1,
+      "norm_label": "luaexportscriptgeneratortests"
+    },
+    {
+      "label": ".Generate_InterpolatesHostAndPort()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_interpolateshostandport",
+      "community": 1,
+      "norm_label": ".generate_interpolateshostandport()"
+    },
+    {
+      "label": ".Generate_ChainsExistingHooksInsteadOfClobberingThem()",
+      "file_type": "code",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_chainsexistinghooksinsteadofclobberingthem",
+      "community": 1,
+      "norm_label": ".generate_chainsexistinghooksinsteadofclobberingthem()"
+    },
+    {
+      "label": "CLAUDE.md",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "id": "claude_md",
+      "community": 10,
+      "norm_label": "claude.md"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "id": "readme_md",
+      "community": 13,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "DcsMcpBridge README",
+      "file_type": "document",
+      "source_file": "src/DcsMcpBridge/README.md",
+      "id": "dcsmcpbridge_readme_md",
+      "community": 12,
+      "norm_label": "dcsmcpbridge readme"
+    },
+    {
+      "label": "App (WinUI)",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "id": "dcs_aiautomator_app",
+      "community": 7,
+      "norm_label": "app (winui)"
+    },
+    {
+      "label": "ThemeResources",
+      "file_type": "code",
+      "source_file": "src/DCS.AIAutomator/Themes/ThemeResources.xaml",
+      "id": "dcs_aiautomator_themeresources",
+      "community": 3,
+      "norm_label": "themeresources"
+    },
+    {
+      "label": "Export.lua",
+      "file_type": "code",
+      "source_file": "Scripts/Export.lua",
+      "id": "dcs_world_export_lua",
+      "community": 9,
+      "norm_label": "export.lua"
+    },
+    {
+      "label": "Lock Screen Logo",
+      "file_type": "image",
+      "source_file": "src/DCS.AIAutomator/Assets/LockScreenLogo.scale-200.png",
+      "id": "lockscreenlogo_png",
+      "community": 7,
+      "norm_label": "lock screen logo"
+    },
+    {
+      "label": "Splash Screen",
+      "file_type": "image",
+      "source_file": "src/DCS.AIAutomator/Assets/SplashScreen.scale-200.png",
+      "id": "splashscreen_png",
+      "community": 7,
+      "norm_label": "splash screen"
+    },
+    {
+      "label": "Store Logo",
+      "file_type": "image",
+      "source_file": "src/DCS.AIAutomator/Assets/StoreLogo.png",
+      "id": "storelogo_png",
+      "community": 14,
+      "norm_label": "store logo"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "DcsMcp.slnx",
+      "weight": 1.0,
+      "source": "dcsmcp",
+      "target": "dcs_aiautomator_dcs_aiautomator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "DcsMcp.slnx",
+      "weight": 1.0,
+      "source": "dcsmcp",
+      "target": "dcs_scripting_dcs_scripting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "DcsMcp.slnx",
+      "weight": 1.0,
+      "source": "dcsmcp",
+      "target": "dcsmcpbridge_dcsmcpbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "DcsMcp.slnx",
+      "weight": 1.0,
+      "source": "dcsmcp",
+      "target": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "DcsMcp.slnx",
+      "weight": 1.0,
+      "source": "dcsmcp",
+      "target": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "dcs_scripting_dcs_scripting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "dcsmcpbridge_dcsmcpbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "framework_net10_0_windows10_0_19041_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "nuget_microsoft_windows_sdk_buildtools",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "nuget_microsoft_windowsappsdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/DCS.AIAutomator.csproj",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_dcs_aiautomator",
+      "target": "src_dcs_aiautomator_dcs_aiautomator_csproj_sdk_microsoft_net_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcs_scripting",
+      "target": "src_dcs_scripting_dcs_scripting_csproj_framework_net10_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcs_scripting",
+      "target": "src_dcs_scripting_dcs_scripting_csproj_nuget_modelcontextprotocol_aspnetcore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DCS.Scripting.csproj",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcs_scripting",
+      "target": "src_dcs_scripting_dcs_scripting_csproj_sdk_microsoft_net_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridge",
+      "target": "dcs_scripting_dcs_scripting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "dcs_scripting_dcs_scripting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridge",
+      "target": "src_dcsmcpbridge_dcsmcpbridge_csproj_framework_net10_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridge",
+      "target": "src_dcsmcpbridge_dcsmcpbridge_csproj_nuget_modelcontextprotocol_aspnetcore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridge.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridge",
+      "target": "src_dcsmcpbridge_dcsmcpbridge_csproj_sdk_microsoft_net_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "dcsmcpbridge_dcsmcpbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "dcsmcpbridge_dcsmcpbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_framework_net10_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_coverlet_collector",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_microsoft_net_test_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_xunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_nuget_xunit_runner_visualstudio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests",
+      "target": "test_dcsmcpbridge_integrationtests_dcsmcpbridge_integrationtests_csproj_sdk_microsoft_net_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_framework_net10_0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_coverlet_collector",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_microsoft_net_test_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_xunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_nuget_xunit_runner_visualstudio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcsmcpbridge_unittests",
+      "target": "test_dcsmcpbridge_unittests_dcsmcpbridge_unittests_csproj_sdk_microsoft_net_sdk",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml",
+      "target": "dcs_aiautomator_app_xaml_app",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "application",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_applytheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_onlaunched",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L82",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_onwindowclosed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_opensettingswindow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_restartbridgeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_setapptheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_app_xaml_app_startbridgeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L9",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_settingsservice_settingsservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L11",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L12",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "elementtheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L10",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_app_xaml_app",
+      "target": "window",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_app_xaml_app_applytheme",
+      "target": "window",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "window",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "window",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L24",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_app_xaml_app_setapptheme",
+      "target": "elementtheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app_setapptheme",
+      "target": "dcs_aiautomator_app_xaml_app_applytheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app_onlaunched",
+      "target": "dcs_aiautomator_app_xaml_app_applytheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app_opensettingswindow",
+      "target": "dcs_aiautomator_app_xaml_app_applytheme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_app_xaml_app_onlaunched",
+      "target": "dcs_aiautomator_app_xaml_app_startbridgeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L39",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_app_xaml_app_onlaunched",
+      "target": "launchactivatedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L52",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_aiautomator_app_xaml_app_startbridgeasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L75",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_aiautomator_app_xaml_app_restartbridgeasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L55",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_pickfolderasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L51",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_scripting_dcsconnection_dcsconnection_executeasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_startasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L79",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_stopasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_calltool_sendatcinstruction_reportsdcsdown",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_disposeasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_initializeasync",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L37",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_listtools_includessendatcinstruction",
+      "target": "task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/App.xaml.cs",
+      "source_location": "L82",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_app_xaml_app_onwindowclosed",
+      "target": "windoweventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_themeresources"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L28",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_scripting_bridgestatus_bridgestatus"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L30",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "bool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L26",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "color",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_onsettingsclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_onstatuschanged",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_onthemetoggleclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_render",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L99",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderdcs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L110",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_rendermission",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_setpulse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "dispatcherqueue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L21",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L70",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_bridgestatus_bridgestatus",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "string",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L33",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_bridgestatus_bridgestatus",
+      "target": "bool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L54",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_onthemetoggleclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L64",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_onsettingsclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L43",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowseinstallpathclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L49",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowsesavedgamespathclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L65",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_ondeployclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L71",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsaveclicked",
+      "target": "routedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L69",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_onstatuschanged",
+      "target": "eventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_render",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L77",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_render",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderdcs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_render",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_rendermission",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L96",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_renderbridge",
+      "target": "dcs_aiautomator_mainwindow_xaml_mainwindow_setpulse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/MainWindow.xaml.cs",
+      "source_location": "L127",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_mainwindow_xaml_mainwindow_setpulse",
+      "target": "storyboard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_aiautomator_app",
+      "target": "dcs_aiautomator_settingsservice"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingsservice",
+      "target": "dcs_aiautomator_settingsservice_settingsservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L14",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_settingsservice_settingsservice",
+      "target": "applicationdatacontainer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingsservice_settingsservice",
+      "target": "dcs_aiautomator_settingsservice_settingsservice_defaultsavedgamespath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingsservice_settingsservice",
+      "target": "dcs_aiautomator_settingsservice_settingsservice_getint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsService.cs",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingsservice_settingsservice",
+      "target": "dcs_aiautomator_settingsservice_settingsservice_getstring",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingsservice_settingsservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_scripting_luaexportdeployer_luaexportdeployer"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowseinstallpathclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowsesavedgamespathclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_ondeployclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L71",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsaveclicked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsectionchanged",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_pickfolderasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow",
+      "target": "func",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L35",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsectionchanged",
+      "target": "navigationview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L35",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onsectionchanged",
+      "target": "navigationviewselectionchangedeventargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowseinstallpathclicked",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_pickfolderasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.AIAutomator/SettingsWindow.xaml.cs",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "dcs_aiautomator_settingswindow_xaml_settingswindow_onbrowsesavedgamespathclicked",
+      "target": "dcs_aiautomator_settingswindow_xaml_settingswindow_pickfolderasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "dcs_scripting_atctools",
+      "target": "dcs_scripting_atctools_atcjsoncontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "dcs_scripting_atctools",
+      "target": "dcs_scripting_atctools_atctools",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "dcs_scripting_atctools_atcjsoncontext",
+      "target": "jsonserializercontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcstelemetryparser_dcstelemetryjsoncontext",
+      "target": "jsonserializercontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "dcs_scripting_atctools_atctools",
+      "target": "dcs_scripting_atctools_atctools_sendatcinstruction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L31",
+      "weight": 1.0,
+      "context": "field",
+      "confidence_score": 1.0,
+      "source": "dcs_scripting_atctools_atctools",
+      "target": "dcs_scripting_idcsconnection_idcsconnection"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcsmcpbridge_dcsmcpbridgehost",
+      "target": "dcs_scripting_atctools_atctools"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "target": "dcs_scripting_atctools_atctools"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_scripting_atctools_atctools_sendatcinstruction",
+      "target": "atcaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcs_scripting_atctools_atctools_sendatcinstruction",
+      "target": "description",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/AtcTools.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcs_scripting_atctools_atctools_sendatcinstruction",
+      "target": "mcpservertool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "dcs_scripting_bridgestatus",
+      "target": "dcs_scripting_bridgestatus_bridgestatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L21",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_bridgestatus_bridgestatus",
+      "target": "bridgestate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/BridgeStatus.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_bridgestatus_bridgestatus",
+      "target": "missioninfo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L16",
+      "weight": 1.0,
+      "context": "field",
+      "confidence_score": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_bridgestatus_bridgestatus"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L19",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions_adddcsscripting",
+      "target": "dcs_scripting_bridgestatus_bridgestatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L41",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_scripting_dcstelemetryparser_dcstelemetryparser_tryparse",
+      "target": "missioninfo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "backgroundservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_cleanconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_dispose",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_executeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_sendluacommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_idcsconnection_idcsconnection"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L15",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "ilogger",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "int",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L21",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "networkstream",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L20",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "tcpclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_scripting_dcsconnection_dcsconnection",
+      "target": "dcs_scripting_dcstelemetryparser_dcstelemetryparser"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcsmcpbridge_dcsmcpbridgehost",
+      "target": "dcs_scripting_dcsconnection_dcsconnection"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L51",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcs_scripting_dcsconnection_dcsconnection_executeasync",
+      "target": "cancellationtoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L77",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection_executeasync",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_cleanconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_startasync",
+      "target": "cancellationtoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L79",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_stopasync",
+      "target": "cancellationtoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsConnection.cs",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsconnection_dcsconnection_cleanconnection",
+      "target": "dcs_scripting_dcsconnection_dcsconnection_dispose",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsscriptingservicecollectionextensions",
+      "target": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions",
+      "target": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions_adddcsscripting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsScriptingServiceCollectionExtensions.cs",
+      "source_location": "L19",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_scripting_dcsscriptingservicecollectionextensions_dcsscriptingservicecollectionextensions_adddcsscripting",
+      "target": "iservicecollection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcstelemetryparser",
+      "target": "dcs_scripting_dcstelemetryparser_dcstelemetryjsoncontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcstelemetryparser",
+      "target": "dcs_scripting_dcstelemetryparser_dcstelemetrymessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcstelemetryparser",
+      "target": "dcs_scripting_dcstelemetryparser_dcstelemetryparser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/DcsTelemetryParser.cs",
+      "source_location": "L41",
+      "weight": 1.0,
+      "source": "dcs_scripting_dcstelemetryparser_dcstelemetryparser",
+      "target": "dcs_scripting_dcstelemetryparser_dcstelemetryparser_tryparse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/IDcsConnection.cs",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "dcs_scripting_idcsconnection",
+      "target": "dcs_scripting_idcsconnection_idcsconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/IDcsConnection.cs",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "dcs_scripting_idcsconnection_idcsconnection",
+      "target": "dcs_scripting_idcsconnection_idcsconnection_sendluacommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection",
+      "target": "dcs_scripting_idcsconnection_idcsconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "dcs_scripting_luaexportdeployer",
+      "target": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "target": "dcs_scripting_luaexportdeployer_luaexportdeployer_deploy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "target": "dcs_world_export_lua"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_scripting_luaexportdeployer_luaexportdeployer",
+      "target": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportDeployer.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcs_scripting_luaexportdeployer_luaexportdeployer_deploy",
+      "target": "deployresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportScriptGenerator.cs",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "dcs_scripting_luaexportscriptgenerator",
+      "target": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DCS.Scripting/LuaExportScriptGenerator.cs",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator",
+      "target": "dcs_scripting_luaexportscriptgenerator_luaexportscriptgenerator_generate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcs_aiautomator_app",
+      "target": "dcsmcpbridge_dcsmcpbridgehost"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_dcsmcpbridgehost"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_disposeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_startasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_stopasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "target": "iasyncdisposable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "target": "webapplication",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L15",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_stopasync",
+      "target": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_disposeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DcsMcpBridge/DcsMcpBridgeHost.cs",
+      "source_location": "L92",
+      "weight": 1.0,
+      "context": "return_type",
+      "source": "dcsmcpbridge_dcsmcpbridgehost_dcsmcpbridgehost_disposeasync",
+      "target": "valuetask",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_calltool_sendatcinstruction_reportsdcsdown",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_disposeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_initializeasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_listtools_includessendatcinstruction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "iasynclifetime",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L16",
+      "weight": 1.0,
+      "context": "field",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests",
+      "target": "mcpclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L37",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_listtools_includessendatcinstruction",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.IntegrationTests/McpServerIntegrationTests.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_integrationtests_mcpserverintegrationtests_mcpserverintegrationtests_calltool_sendatcinstruction_reportsdcsdown",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_defaultsheadingto360",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_formatsexpectedluacommand",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L40",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnserrormessage_whenconnectionfails",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnssuccessmessage_whenconnectionsucceeds",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemission_returnspopulatedmissioninfo",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemissionmissingoptionalfields_defaultstounknown",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L20",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_inactivemission_returnstruewithnullmission",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_malformedjson_returnsfalse",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L22",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_appendsdofileandbacksupexistingexportlua_whennotalreadywired",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L40",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_isidempotent_doesnotduplicatedofileorrewritebackup",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L9",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_writesexportscriptandcreatesexportlua_whennoneexists",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L14",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_chainsexistinghooksinsteadofclobberingthem",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "context": "attribute",
+      "source": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_interpolateshostandport",
+      "target": "fact",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_atctoolstests",
+      "target": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "target": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_defaultsheadingto360",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "target": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_formatsexpectedluacommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "target": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnserrormessage_whenconnectionfails",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/AtcToolsTests.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_atctoolstests_atctoolstests",
+      "target": "dcsmcpbridge_unittests_atctoolstests_atctoolstests_sendatcinstruction_returnssuccessmessage_whenconnectionsucceeds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests",
+      "target": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "target": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemission_returnspopulatedmissioninfo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "target": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_activemissionmissingoptionalfields_defaultstounknown",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "target": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_inactivemission_returnstruewithnullmission",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/DcsTelemetryParserTests.cs",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests",
+      "target": "dcsmcpbridge_unittests_dcstelemetryparsertests_dcstelemetryparsertests_tryparse_malformedjson_returnsfalse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_fakedcsconnection",
+      "target": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/FakeDcsConnection.cs",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection",
+      "target": "dcsmcpbridge_unittests_fakedcsconnection_fakedcsconnection_sendluacommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests",
+      "target": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_appendsdofileandbacksupexistingexportlua_whennotalreadywired",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_isidempotent_doesnotduplicatedofileorrewritebackup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_deploy_writesexportscriptandcreatesexportlua_whennoneexists",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests_dispose",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportDeployerTests.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportdeployertests_luaexportdeployertests",
+      "target": "idisposable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportscriptgeneratortests",
+      "target": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests",
+      "target": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_chainsexistinghooksinsteadofclobberingthem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "test/DcsMcpBridge.UnitTests/LuaExportScriptGeneratorTests.cs",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests",
+      "target": "dcsmcpbridge_unittests_luaexportscriptgeneratortests_luaexportscriptgeneratortests_generate_interpolateshostandport",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/DCS.AIAutomator/Assets/LockScreenLogo.scale-200.png",
+      "source": "lockscreenlogo_png",
+      "target": "dcs_aiautomator_app"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/DCS.AIAutomator/Assets/SplashScreen.scale-200.png",
+      "source": "splashscreen_png",
+      "target": "dcs_aiautomator_app"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "mcp_server_flow",
+      "label": "MCP Server Implementation Flow",
+      "nodes": [
+        "dcsmcpbridge_dcsmcpbridgehost",
+        "dcsmcpbridge_atctools",
+        "dcsmcpbridge_dcsconnection",
+        "dcsmcpbridge_idcsconnection"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md"
+    },
+    {
+      "id": "dcs_telemetry_flow",
+      "label": "DCS Telemetry Processing",
+      "nodes": [
+        "dcs_world_export_lua",
+        "dcsmcpbridge_dcsconnection",
+        "dcsmcpbridge_dcstelemetryparser",
+        "dcsmcpbridge_bridgestatus"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md"
+    },
+    {
+      "id": "winui_app_structure",
+      "label": "WinUI Application Components",
+      "nodes": [
+        "dcs_aiautomator_app",
+        "dcs_aiautomator_mainwindow",
+        "dcs_aiautomator_settingswindow",
+        "dcs_aiautomator_settingsservice"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md"
+    }
+  ],
+  "built_at_commit": "70723225c70c38f82a369e9534185b7b6366c734"
+}
