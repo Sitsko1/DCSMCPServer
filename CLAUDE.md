@@ -100,8 +100,14 @@ only *appends* a guarded `dofile(...)` to `Scripts/Export.lua` if missing (backi
 `.bak` first). It's idempotent: already wired + identical companion script → "Already
 deployed", writes nothing.
 
-None of this has been run against a live DCS instance — it's verified against LuaSocket/DCS
-docs only.
+Verified against a live DCS session: deploy into Saved Games, the Lua listener, and the app's
+connection all work alongside WWT/Tacview/DCS-BIOS exports. Still unverified live: the
+`multiplayer` field and `send_atc_instruction` driven by a real MCP client.
+
+The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
+must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a
+`Scripts` folder, so it was easy to pick by mistake. The default path comes from the Windows
+Saved Games known folder, not `%USERPROFILE%`, because users relocate it (e.g. `E:\SavedGames`).
 
 ## Commands
 

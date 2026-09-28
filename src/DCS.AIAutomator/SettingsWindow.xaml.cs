@@ -93,6 +93,10 @@ public sealed partial class SettingsWindow : Window
             result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
     }
 
+    // Nothing is persisted until Save, so discarding staged edits is just closing; App drops its
+    // reference on Closed and the next open reloads from SettingsService.
+    private void OnCancelClicked(object sender, RoutedEventArgs e) => Close();
+
     private async void OnSaveClicked(object sender, RoutedEventArgs e)
     {
         if (!ValidatePaths())

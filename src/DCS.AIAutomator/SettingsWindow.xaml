@@ -153,6 +153,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <TextBlock x:Name="SaveStatusText" Style="{StaticResource SubtleMonoStyle}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Button Content="Save &amp; restart bridge" Click="OnSaveClicked" Style="{ThemeResource AccentButtonStyle}" />
+                <Button Content="Cancel" Click="OnCancelClicked">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="Escape" />
+                    </Button.KeyboardAccelerators>
+                </Button>
             </StackPanel>
         </Border>
     </Grid>
