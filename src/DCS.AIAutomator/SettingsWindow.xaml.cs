@@ -56,6 +56,30 @@ public sealed partial class SettingsWindow : Window
         if (path is not null) SavedGamesPathBox.Text = path;
     }
 
+    private async void OnResetConnectionClicked(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"], // code-created dialogs don't get it implicitly
+            RequestedTheme = RootGrid.ActualTheme, // ContentDialog doesn't inherit the window root's theme
+            Title = "Reset connection settings?",
+            Content = $"MCP server port → {SettingsService.DefaultMcpPort}\n" +
+                      $"DCS host → {SettingsService.DefaultDcsHost}\n" +
+                      $"DCS port → {SettingsService.DefaultDcsPort}\n\n" +
+                      "Nothing is saved until you click Save.",
+            PrimaryButtonText = "Reset",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        // Staged like any other edit: Save persists and restarts the bridge, Cancel discards.
+        McpPortBox.Value = SettingsService.DefaultMcpPort;
+        DcsHostBox.Text = SettingsService.DefaultDcsHost;
+        DcsPortBox.Value = SettingsService.DefaultDcsPort;
+    }
+
     private void OnPathTextChanged(object sender, TextChangedEventArgs e) => ValidatePaths();
 
     /// <summary>Shows each path box's error (if any) under it; returns true when both are valid.</summary>

@@ -17,6 +17,9 @@ reliably support stdio redirection anyway. `DcsMcpBridgeHost` runs the server ov
 status is just the host's lifetime state. Earlier stdio implementations (`src/DcsMcpServer`,
 `src/McpBridgeHostedService`, a stdio-exe `DcsMcpBridge`) were deleted on purpose.
 
+**Single-player only until v2.** Multiplayer capabilities are deferred to version 2 or later
+(maintainer decision) — don't build, test, or spec multiplayer behavior before then.
+
 ## Knowledge graph
 
 `graphify-out/` (gitignored) holds a prebuilt knowledge graph of this repo. For
@@ -76,16 +79,20 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 `DcsTelemetryParser` expects one JSON object per line from Export.lua:
 
 ```json
-{"missionActive": true, "missionName": "...", "terrain": "...", "aircraft": "...", "multiplayer": false}
+{"missionActive": true, "aircraft": "..."}   // missionName/terrain optional, default "Unknown"
 ```
 
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
 `CurrentMission`, a garbage line leaves prior state alone. The generator's Lua
 `string.format(...)` JSON and `DcsTelemetryMessage`/`DcsTelemetryParser` must be kept in sync
-by hand — nothing enforces it across the language boundary. `missionActive`/`missionName`/
-`terrain`/`aircraft` come from real Export APIs (`LoGetMissionInfo`/`LoGetSelfData`);
-`multiplayer` is speculative (`net.get_server_id()` is a Hooks-environment API) and will
-likely always report `false`.
+by hand — nothing enforces it across the language boundary. **Check any `Lo*` call against
+the stock `DCS World/Scripts/Export.lua` API list before using it**: the script once relied on
+`LoGetMissionInfo`, which doesn't exist; `pcall` swallowed the error and the app showed "No
+active mission" forever. `missionActive` is `true` simply because Export hooks only run during
+a mission (`LuaExportStop` sends `false`); `aircraft` is `LoGetSelfData().Name`. Mission name and
+terrain exist only in the Hooks environment (`Sim.getMissionName()`, `Scripts/Hooks/*.lua`), so
+the Export script can't send them. A speculative `multiplayer` field was removed (multiplayer is deferred to v2); unknown JSON fields
+are ignored, so scripts deployed before that still parse until redeployed.
 
 ### Export.lua deployment: DCS is the socket server, this app is the client
 
@@ -101,8 +108,8 @@ only *appends* a guarded `dofile(...)` to `Scripts/Export.lua` if missing (backi
 deployed", writes nothing.
 
 Verified against a live DCS session: deploy into Saved Games, the Lua listener, and the app's
-connection all work alongside WWT/Tacview/DCS-BIOS exports. Still unverified live: the
-`multiplayer` field and `send_atc_instruction` driven by a real MCP client.
+connection all work alongside WWT/Tacview/DCS-BIOS exports. Still unverified live:
+`send_atc_instruction` driven by a real MCP client.
 
 The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
 must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a

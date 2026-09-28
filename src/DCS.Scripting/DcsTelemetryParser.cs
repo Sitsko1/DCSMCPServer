@@ -21,9 +21,6 @@ public sealed class DcsTelemetryMessage
 
     [JsonPropertyName("aircraft")]
     public string? Aircraft { get; set; }
-
-    [JsonPropertyName("multiplayer")]
-    public bool Multiplayer { get; set; }
 }
 
 [JsonSerializable(typeof(DcsTelemetryMessage))]
@@ -62,8 +59,7 @@ public static class DcsTelemetryParser
             mission = new MissionInfo(
                 message.MissionName ?? "Unknown",
                 message.Terrain ?? "Unknown",
-                message.Aircraft ?? "Unknown",
-                message.Multiplayer);
+                message.Aircraft ?? "Unknown");
         }
 
         return true;

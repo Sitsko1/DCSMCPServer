@@ -140,7 +140,6 @@ public sealed partial class MainWindow : Window
             AircraftText.Text = mission.Aircraft;
             MissionNameText.Text = mission.MissionName;
             TerrainText.Text = mission.Terrain;
-            ModeText.Text = mission.IsMultiplayer ? "MULTIPLAYER" : "SINGLEPLAYER";
         }
     }
 

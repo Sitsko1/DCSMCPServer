@@ -12,23 +12,27 @@ namespace DCS.AIAutomator;
 /// </summary>
 public sealed class SettingsService
 {
+    public const int DefaultMcpPort = 5270;
+    public const string DefaultDcsHost = "127.0.0.1";
+    public const int DefaultDcsPort = 1024;
+
     private readonly ApplicationDataContainer _values = ApplicationData.Current.LocalSettings;
 
     public int McpPort
     {
-        get => GetInt(nameof(McpPort), 5270);
+        get => GetInt(nameof(McpPort), DefaultMcpPort);
         set => _values.Values[nameof(McpPort)] = value;
     }
 
     public string DcsHost
     {
-        get => GetString(nameof(DcsHost), "127.0.0.1");
+        get => GetString(nameof(DcsHost), DefaultDcsHost);
         set => _values.Values[nameof(DcsHost)] = value;
     }
 
     public int DcsPort
     {
-        get => GetInt(nameof(DcsPort), 1024);
+        get => GetInt(nameof(DcsPort), DefaultDcsPort);
         set => _values.Values[nameof(DcsPort)] = value;
     }
 

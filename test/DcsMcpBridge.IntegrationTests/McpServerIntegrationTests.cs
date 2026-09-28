@@ -12,13 +12,17 @@ public class McpServerIntegrationTests : IAsyncLifetime
     // DCS.AIAutomator doesn't collide with the test run.
     private const string ListenUrl = "http://127.0.0.1:5271";
 
+    // Likewise a DCS port nothing listens on: the default 1024 is taken whenever DCS itself is
+    // running with the deployed script, which made the "DCS is down" test connect to real DCS.
+    private const int UnusedDcsPort = 1025;
+
     private DcsMcpBridgeHost _host = null!;
     private McpClient _client = null!;
 
     public async Task InitializeAsync()
     {
         _host = new DcsMcpBridgeHost();
-        await _host.StartAsync(ListenUrl);
+        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort);
 
         var transport = new HttpClientTransport(new HttpClientTransportOptions
         {
@@ -56,7 +60,7 @@ public class McpServerIntegrationTests : IAsyncLifetime
 
         string? resultText = result.Content.OfType<TextContentBlock>().First().Text;
 
-        // No real DCS instance is listening on 127.0.0.1:1024 in the test environment — this is
+        // No real DCS instance is listening on 127.0.0.1:1025 in the test environment — this is
         // the correct, expected response, not a failure.
         Assert.Equal("Error: DCS interface is down.", resultText);
     }

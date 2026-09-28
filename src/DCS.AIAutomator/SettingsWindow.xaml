@@ -72,6 +72,8 @@
                             <NumberBox x:Name="DcsPortBox" Grid.Column="1" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" />
                         </Grid>
                     </Border>
+
+                    <Button Content="Reset to defaults" Click="OnResetConnectionClicked" HorizontalAlignment="Left" />
                 </StackPanel>
 
                 <!-- Paths -->

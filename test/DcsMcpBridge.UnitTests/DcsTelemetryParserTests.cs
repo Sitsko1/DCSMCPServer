@@ -6,7 +6,7 @@ public class DcsTelemetryParserTests
     public void TryParse_ActiveMission_ReturnsPopulatedMissionInfo()
     {
         bool ok = DcsTelemetryParser.TryParse(
-            """{"missionActive":true,"missionName":"Enfield Strike Package","terrain":"Syria","aircraft":"F-16C","multiplayer":true}""",
+            """{"missionActive":true,"missionName":"Enfield Strike Package","terrain":"Syria","aircraft":"F-16C"}""",
             out MissionInfo? mission);
 
         Assert.True(ok);
@@ -14,7 +14,18 @@ public class DcsTelemetryParserTests
         Assert.Equal("Enfield Strike Package", mission!.MissionName);
         Assert.Equal("Syria", mission.Terrain);
         Assert.Equal("F-16C", mission.Aircraft);
-        Assert.True(mission.IsMultiplayer);
+    }
+
+    [Fact]
+    public void TryParse_IgnoresMultiplayerFieldFromPreviouslyDeployedScripts()
+    {
+        // Scripts deployed before multiplayer was deferred to v2 still send this field until redeployed.
+        bool ok = DcsTelemetryParser.TryParse(
+            """{"missionActive":true,"missionName":"M","terrain":"T","aircraft":"A","multiplayer":true}""",
+            out MissionInfo? mission);
+
+        Assert.True(ok);
+        Assert.Equal("A", mission!.Aircraft);
     }
 
     [Fact]
@@ -45,6 +56,5 @@ public class DcsTelemetryParserTests
         Assert.Equal("Unknown", mission!.MissionName);
         Assert.Equal("Unknown", mission.Terrain);
         Assert.Equal("Unknown", mission.Aircraft);
-        Assert.False(mission.IsMultiplayer);
     }
 }

@@ -6,8 +6,8 @@ namespace DCS.Scripting;
 /// bundled Listener/Talker examples, DCS is the *server* (bind+accept) and this app is the
 /// *client* that connects out — matching DcsConnection.cs, which already connects out to
 /// dcsIp:dcsPort. Best-effort: DCS's Export environment exposes a different, smaller API surface
-/// than the Hooks environment (mission-name/aircraft/multiplayer live in different places
-/// depending on DCS version), so some telemetry fields may report "Unknown" until verified
+/// than the Hooks environment (mission-name/aircraft live in different places depending on DCS
+/// version), so some telemetry fields may report "Unknown" until verified
 /// against a live DCS session — same caveat as DcsTelemetryParser's contract.
 /// </summary>
 public static class LuaExportScriptGenerator
@@ -85,32 +85,17 @@ public static class LuaExportScriptGenerator
             return (tostring(s):gsub('[\\"]', '\\%0'):gsub('\n', '\\n'))
         end
 
-        -- Best-effort telemetry: LoGetMissionInfo/LoGetSelfData are the closest Export-environment
-        -- equivalents to mission/aircraft state. Multiplayer detection has no confirmed
-        -- Export-environment API; net.get_server_id is a Hooks-environment call being tried here
-        -- speculatively and will likely just leave "multiplayer" false until verified live.
+        -- Export hooks only run while a mission is loaded, so being here means a mission is active.
+        -- Mission name/terrain aren't available in the Export environment at all (only via Sim.*
+        -- in Scripts/Hooks), so they're omitted and the app shows them as "Unknown".
         local function mcpBridgeBuildTelemetry()
-            local missionActive, missionName, terrain, aircraft, multiplayer = false, "Unknown", "Unknown", "Unknown", false
-
-            local ok, info = pcall(LoGetMissionInfo)
-            if ok and info then
-                missionActive = true
-                missionName = info.missionName or missionName
-                terrain = info.theatre or terrain
-            end
-
-            local ok2, self_ = pcall(LoGetSelfData)
-            if ok2 and self_ then
+            local aircraft = "Unknown"
+            local ok, self_ = pcall(LoGetSelfData)
+            if ok and self_ then
                 aircraft = self_.Name or aircraft
             end
 
-            local ok3, serverId = pcall(function() return net.get_server_id() end)
-            if ok3 and serverId then multiplayer = true end
-
-            return string.format(
-                '{"missionActive":%s,"missionName":"%s","terrain":"%s","aircraft":"%s","multiplayer":%s}',
-                tostring(missionActive), mcpBridgeJsonEscape(missionName), mcpBridgeJsonEscape(terrain),
-                mcpBridgeJsonEscape(aircraft), tostring(multiplayer))
+            return string.format('{"missionActive":true,"aircraft":"%s"}', mcpBridgeJsonEscape(aircraft))
         end
 
         -- Chain onto whatever Export.lua already defines (DCS-BIOS, DCSFlightpanels, VAICOM, etc.)
@@ -135,6 +120,7 @@ public static class LuaExportScriptGenerator
 
         local mcpBridgePrevStop = LuaExportStop
         function LuaExportStop()
+            pcall(mcpBridgeSendLine, '{"missionActive":false}') -- lets the app clear the mission readout
             if McpBridge.client then McpBridge.client:close() end
             if McpBridge.server then McpBridge.server:close() end
             McpBridge.client, McpBridge.server = nil, nil
