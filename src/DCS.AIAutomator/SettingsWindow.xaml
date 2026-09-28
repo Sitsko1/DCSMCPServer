@@ -87,9 +87,11 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="InstallPathBox" Grid.Column="0" />
+                                <TextBox x:Name="InstallPathBox" Grid.Column="0" TextChanged="OnPathTextChanged" />
                                 <Button Grid.Column="1" Content="Browse…" Click="OnBrowseInstallPathClicked" />
                             </Grid>
+                            <TextBlock x:Name="InstallPathError" Style="{StaticResource SettingsCardDescriptionStyle}"
+                                       Foreground="{ThemeResource FaultBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
                         </StackPanel>
                     </Border>
 
@@ -104,9 +106,11 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="SavedGamesPathBox" Grid.Column="0" />
+                                <TextBox x:Name="SavedGamesPathBox" Grid.Column="0" TextChanged="OnPathTextChanged" />
                                 <Button Grid.Column="1" Content="Browse…" Click="OnBrowseSavedGamesPathClicked" />
                             </Grid>
+                            <TextBlock x:Name="SavedGamesPathError" Style="{StaticResource SettingsCardDescriptionStyle}"
+                                       Foreground="{ThemeResource FaultBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

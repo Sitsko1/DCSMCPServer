@@ -56,6 +56,23 @@ public sealed partial class SettingsWindow : Window
         if (path is not null) SavedGamesPathBox.Text = path;
     }
 
+    private void OnPathTextChanged(object sender, TextChangedEventArgs e) => ValidatePaths();
+
+    /// <summary>Shows each path box's error (if any) under it; returns true when both are valid.</summary>
+    private bool ValidatePaths()
+    {
+        bool installOk = ShowError(InstallPathError, DcsPathValidator.ValidateInstallPath(InstallPathBox.Text));
+        bool savedGamesOk = ShowError(SavedGamesPathError, DcsPathValidator.ValidateSavedGamesPath(SavedGamesPathBox.Text));
+        return installOk && savedGamesOk;
+    }
+
+    private static bool ShowError(TextBlock errorText, string? error)
+    {
+        errorText.Text = error ?? string.Empty;
+        errorText.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
+        return error is null;
+    }
+
     private async Task<string?> PickFolderAsync()
     {
         var picker = new FolderPicker();
@@ -78,6 +95,14 @@ public sealed partial class SettingsWindow : Window
 
     private async void OnSaveClicked(object sender, RoutedEventArgs e)
     {
+        if (!ValidatePaths())
+        {
+            // The errors render under the path boxes, which may be on a hidden tab — jump to it.
+            SectionNav.SelectedItem = SectionNav.MenuItems[1];
+            SaveStatusText.Text = "Not saved: fix the DCS paths.";
+            return;
+        }
+
         _settings.McpPort = (int)McpPortBox.Value;
         _settings.DcsHost = DcsHostBox.Text;
         _settings.DcsPort = (int)DcsPortBox.Value;

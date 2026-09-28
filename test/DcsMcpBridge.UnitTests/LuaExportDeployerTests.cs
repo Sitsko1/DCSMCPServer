@@ -4,6 +4,9 @@ public class LuaExportDeployerTests : IDisposable
 {
     private readonly string _savedGamesDir = Path.Combine(Path.GetTempPath(), "DcsMcpBridgeTests_" + Guid.NewGuid());
 
+    // Config marks it as a real DCS Saved Games folder (see DcsPathValidator).
+    public LuaExportDeployerTests() => Directory.CreateDirectory(Path.Combine(_savedGamesDir, "Config"));
+
     public void Dispose() => Directory.Delete(_savedGamesDir, recursive: true);
 
     private string ScriptsDir => Path.Combine(_savedGamesDir, "Scripts");

@@ -21,6 +21,11 @@ public static class LuaExportDeployer
 
     public static DeployResult Deploy(string savedGamesPath, string dcsHost, int dcsPort)
     {
+        if (DcsPathValidator.ValidateSavedGamesPath(savedGamesPath) is { } pathError)
+        {
+            return new DeployResult(false, pathError);
+        }
+
         try
         {
             string scriptsDir = Path.Combine(savedGamesPath, "Scripts");

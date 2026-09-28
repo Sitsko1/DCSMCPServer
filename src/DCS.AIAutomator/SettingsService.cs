@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Windows.Storage;
 
 namespace DCS.AIAutomator;
@@ -51,8 +52,22 @@ public sealed class SettingsService
 
     public string McpListenUrl => $"http://127.0.0.1:{McpPort}";
 
-    private static string DefaultSavedGamesPath() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Saved Games", "DCS");
+    // Ask Windows for the Saved Games known folder: users commonly relocate it (e.g. to another
+    // drive), so %USERPROFILE%\Saved Games is only a fallback. Environment.SpecialFolder has no
+    // SavedGames member, hence the P/Invoke.
+    private static string DefaultSavedGamesPath()
+    {
+        var savedGamesFolderId = new Guid("4C5C32FF-BB9D-43b0-B5B4-2D72E54EAAA4"); // FOLDERID_SavedGames
+        string root = SHGetKnownFolderPath(savedGamesFolderId, 0, IntPtr.Zero, out string? path) == 0 && path is not null
+            ? path
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Saved Games");
+        return Path.Combine(root, "DCS");
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHGetKnownFolderPath(
+        [MarshalAs(UnmanagedType.LPStruct)] Guid rfid, uint dwFlags, IntPtr hToken,
+        [MarshalAs(UnmanagedType.LPWStr)] out string? ppszPath);
 
     private string GetString(string key, string fallback) =>
         _values.Values.TryGetValue(key, out object? v) && v is string s ? s : fallback;
