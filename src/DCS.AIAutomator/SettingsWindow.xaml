@@ -87,9 +87,11 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="InstallPathBox" Grid.Column="0" />
+                                <TextBox x:Name="InstallPathBox" Grid.Column="0" TextChanged="OnPathTextChanged" />
                                 <Button Grid.Column="1" Content="Browse…" Click="OnBrowseInstallPathClicked" />
                             </Grid>
+                            <TextBlock x:Name="InstallPathError" Style="{StaticResource SettingsCardDescriptionStyle}"
+                                       Foreground="{ThemeResource FaultBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
                         </StackPanel>
                     </Border>
 
@@ -104,9 +106,11 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="SavedGamesPathBox" Grid.Column="0" />
+                                <TextBox x:Name="SavedGamesPathBox" Grid.Column="0" TextChanged="OnPathTextChanged" />
                                 <Button Grid.Column="1" Content="Browse…" Click="OnBrowseSavedGamesPathClicked" />
                             </Grid>
+                            <TextBlock x:Name="SavedGamesPathError" Style="{StaticResource SettingsCardDescriptionStyle}"
+                                       Foreground="{ThemeResource FaultBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -149,6 +153,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <TextBlock x:Name="SaveStatusText" Style="{StaticResource SubtleMonoStyle}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Button Content="Save &amp; restart bridge" Click="OnSaveClicked" Style="{ThemeResource AccentButtonStyle}" />
+                <Button Content="Cancel" Click="OnCancelClicked">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="Escape" />
+                    </Button.KeyboardAccelerators>
+                </Button>
             </StackPanel>
         </Border>
     </Grid>
