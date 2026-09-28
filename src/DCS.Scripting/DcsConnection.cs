@@ -66,9 +66,10 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                 using var reader = new StreamReader(_stream, Encoding.UTF8, leaveOpen: true);
                 while (!stoppingToken.IsCancellationRequested && await reader.ReadLineAsync(stoppingToken) is string line)
                 {
-                    if (DcsTelemetryParser.TryParse(line, out MissionInfo? mission))
+                    if (DcsTelemetryParser.TryParse(line, out MissionInfo? mission, out AircraftState? aircraft))
                     {
                         _status.CurrentMission = mission;
+                        _status.Aircraft = aircraft;
                     }
                 }
             }
@@ -89,6 +90,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _stream = null;
         _status.DcsConnected = false;
         _status.CurrentMission = null;
+        _status.Aircraft = null;
     }
 
     public override void Dispose()

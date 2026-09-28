@@ -55,7 +55,8 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             builder.Services
                 .AddMcpServer()
                 .WithHttpTransport(o => o.Stateless = true)
-                .WithTools<AtcTools>(atcToolSerializerOptions);
+                .WithTools<AtcTools>(atcToolSerializerOptions)
+                .WithTools<AircraftTools>();
 
             builder.WebHost.UseUrls(listenUrl);
 

@@ -78,41 +78,94 @@
 
         <Border Grid.Row="2" Height="1" Background="{ThemeResource HairlineBrush}" Margin="24,0" />
 
-        <!-- Mission readout -->
-        <Grid Grid.Row="3" Padding="24,20,24,24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+        <!-- Mission readout + aircraft status; scrolls when the expander doesn't fit the window -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+            <StackPanel Padding="24,20,24,24" Spacing="20">
+                <!-- Mission readout -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="MISSION" Style="{StaticResource EyebrowLabelStyle}" Margin="0,0,0,16" />
+                    <TextBlock Grid.Row="0" Text="MISSION" Style="{StaticResource EyebrowLabelStyle}" Margin="0,0,0,16" />
 
-            <StackPanel x:Name="NoMissionPanel" Grid.Row="1" Spacing="4" VerticalAlignment="Top">
-                <TextBlock Text="No active mission" FontFamily="{StaticResource DisplayFont}" FontSize="15" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" />
-                <TextBlock Text="Waiting for DCS telemetry." FontFamily="{StaticResource TextFont}" FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" />
+                    <StackPanel x:Name="NoMissionPanel" Grid.Row="1" Spacing="4" VerticalAlignment="Top">
+                        <TextBlock Text="No active mission" FontFamily="{StaticResource DisplayFont}" FontSize="15" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" />
+                        <TextBlock Text="Waiting for DCS telemetry." FontFamily="{StaticResource TextFont}" FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Grid x:Name="MissionDetailPanel" Grid.Row="1" Visibility="Collapsed" RowSpacing="12" VerticalAlignment="Top">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="88" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="AIRCRAFT" Style="{StaticResource FieldLabelStyle}" />
+                        <TextBlock x:Name="AircraftText" Grid.Row="0" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MISSION" Style="{StaticResource FieldLabelStyle}" />
+                        <TextBlock x:Name="MissionNameText" Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="TERRAIN" Style="{StaticResource FieldLabelStyle}" />
+                        <TextBlock x:Name="TerrainText" Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+
+                    </Grid>
+                </Grid>
+
+                <!-- Aircraft status: live ownship readout (~5 Hz), in the units chosen in Settings > Display -->
+                <Expander x:Name="AircraftExpander" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Background="{ThemeResource SurfaceBrush}">
+                    <Expander.Header>
+                        <TextBlock Text="AIRCRAFT STATUS" Style="{StaticResource EyebrowLabelStyle}" />
+                    </Expander.Header>
+                    <StackPanel>
+                        <TextBlock x:Name="NoAircraftText" Text="No active aircraft" FontFamily="{StaticResource TextFont}" FontSize="12"
+                                   Foreground="{ThemeResource TextSecondaryBrush}" />
+                        <Grid x:Name="AircraftDetailPanel" Visibility="Collapsed" RowSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="88" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="POSITION" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="PositionText" Grid.Row="0" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="ALT MSL" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="AltMslText" Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="ALT AGL" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="AltAglText" Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="IAS" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="IasText" Grid.Row="3" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="TAS" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="TasText" Grid.Row="4" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="MACH" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="MachText" Grid.Row="5" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="V/S" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="VsText" Grid.Row="6" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="7" Grid.Column="0" Text="HEADING" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="HeadingText" Grid.Row="7" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                            <TextBlock Grid.Row="8" Grid.Column="0" Text="FAULTS" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock x:Name="FaultsText" Grid.Row="8" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
+                        </Grid>
+                    </StackPanel>
+                </Expander>
             </StackPanel>
-
-            <Grid x:Name="MissionDetailPanel" Grid.Row="1" Visibility="Collapsed" RowSpacing="12" VerticalAlignment="Top">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="88" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="AIRCRAFT" Style="{StaticResource FieldLabelStyle}" />
-                <TextBlock x:Name="AircraftText" Grid.Row="0" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
-
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="MISSION" Style="{StaticResource FieldLabelStyle}" />
-                <TextBlock x:Name="MissionNameText" Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
-
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="TERRAIN" Style="{StaticResource FieldLabelStyle}" />
-                <TextBlock x:Name="TerrainText" Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValueStyle}" />
-
-            </Grid>
-        </Grid>
+        </ScrollViewer>
     </Grid>
 </Window>

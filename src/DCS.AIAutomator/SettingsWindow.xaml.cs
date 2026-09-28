@@ -15,14 +15,16 @@ namespace DCS.AIAutomator;
 public sealed partial class SettingsWindow : Window
 {
     private readonly SettingsService _settings;
-    private readonly Func<Task> _restartBridgeAsync;
+    private readonly Func<bool, Task> _applySettingsAsync;
     private readonly NotificationService _notifications;
 
-    public SettingsWindow(SettingsService settings, Func<Task> restartBridgeAsync, NotificationService notifications)
+    /// <param name="applySettingsAsync">Applies saved settings; the argument says whether the
+    /// bridge must restart (only when a connection setting changed).</param>
+    public SettingsWindow(SettingsService settings, Func<bool, Task> applySettingsAsync, NotificationService notifications)
     {
         InitializeComponent();
         _settings = settings;
-        _restartBridgeAsync = restartBridgeAsync;
+        _applySettingsAsync = applySettingsAsync;
         _notifications = notifications;
 
         AppWindow.Resize(new Windows.Graphics.SizeInt32(560, 560));
@@ -33,6 +35,7 @@ public sealed partial class SettingsWindow : Window
         InstallPathBox.Text = _settings.DcsInstallPath;
         SavedGamesPathBox.Text = _settings.DcsSavedGamesPath;
         ToastDurationBox.Value = _settings.ToastDurationSeconds;
+        UnitsBox.SelectedIndex = _settings.Units == UnitSystem.Metric ? 1 : 0;
     }
 
     private void OnSectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -42,6 +45,7 @@ public sealed partial class SettingsWindow : Window
         PathsPanel.Visibility = tag == "Paths" ? Visibility.Visible : Visibility.Collapsed;
         IntegrationPanel.Visibility = tag == "Integration" ? Visibility.Visible : Visibility.Collapsed;
         NotificationsPanel.Visibility = tag == "Notifications" ? Visibility.Visible : Visibility.Collapsed;
+        DisplayPanel.Visibility = tag == "Display" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void OnBrowseInstallPathClicked(object sender, RoutedEventArgs e)
@@ -131,18 +135,27 @@ public sealed partial class SettingsWindow : Window
             return;
         }
 
+        // Only connection settings need a bridge restart (which also drops the DCS connection);
+        // units, paths and toast duration apply without one.
+        bool connectionChanged = _settings.McpPort != (int)McpPortBox.Value
+            || _settings.DcsHost != DcsHostBox.Text
+            || _settings.DcsPort != (int)DcsPortBox.Value;
+
         _settings.McpPort = (int)McpPortBox.Value;
         _settings.DcsHost = DcsHostBox.Text;
         _settings.DcsPort = (int)DcsPortBox.Value;
         _settings.DcsInstallPath = InstallPathBox.Text;
         _settings.DcsSavedGamesPath = SavedGamesPathBox.Text;
         _settings.ToastDurationSeconds = (int)ToastDurationBox.Value;
+        _settings.Units = UnitsBox.SelectedIndex == 1 ? UnitSystem.Metric : UnitSystem.Imperial;
 
-        SaveStatusText.Text = "Restarting bridge…";
+        if (connectionChanged) SaveStatusText.Text = "Restarting bridge…";
         try
         {
-            await _restartBridgeAsync();
-            _notifications.Show("Settings saved", "Bridge restarted with the new settings.", NotificationSeverity.Success);
+            await _applySettingsAsync(connectionChanged);
+            _notifications.Show("Settings saved",
+                connectionChanged ? "Bridge restarted with the new settings." : "Applied without restarting the bridge.",
+                NotificationSeverity.Success);
             Close(); // the toast in the main window confirms the save
         }
         catch (Exception ex)

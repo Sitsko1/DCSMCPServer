@@ -54,6 +54,45 @@ public class LuaHooksScriptGeneratorTests
         Assert.DoesNotContain("LoGetMissionInfo", Lua);
 
     [Fact]
+    public void Generate_SendsOwnshipStateFromExportApi()
+    {
+        Assert.Contains("\"ownship\"", Lua);
+        foreach (string call in new[]
+        {
+            "Export.LoGetAltitudeAboveSeaLevel()", "Export.LoGetAltitudeAboveGroundLevel()",
+            "Export.LoGetIndicatedAirSpeed()", "Export.LoGetTrueAirSpeed()", "Export.LoGetMachNumber()",
+            "Export.LoGetVerticalVelocity()", "Export.LoGetMagneticYaw()", "Export.LoGetMCPState()",
+            "LatLongAlt",
+        })
+        {
+            Assert.Contains(call, Lua);
+        }
+    }
+
+    [Fact]
+    public void Generate_ReportsOnlyFailureFlags_NotPlainStateFlags()
+    {
+        Assert.Contains("\"LeftEngineFailure\"", Lua);
+        Assert.Contains("\"FuelTankDamage\"", Lua);
+        Assert.Contains("\"MasterWarning\"", Lua);
+        Assert.DoesNotContain("AutopilotOn", Lua);
+        Assert.DoesNotContain("CanopyOpen", Lua);
+    }
+
+    [Fact]
+    public void Generate_ThrottlesTelemetry_ButDrainsCommandsEveryFrame()
+    {
+        Assert.Contains("TELEMETRY_INTERVAL = 0.2", Lua); // invariant culture, never "0,2"
+        Assert.Contains("Export.LoGetModelTime()", Lua);
+
+        string frame = Lua[Lua.IndexOf("function mcpBridgeCallbacks.onSimulationFrame")..];
+        int readCommands = frame.IndexOf("mcpBridgeReadCommands()");
+        int throttleCheck = frame.IndexOf("TELEMETRY_INTERVAL");
+        Assert.True(readCommands >= 0 && readCommands < throttleCheck,
+            "commands must be drained before (outside) the telemetry throttle");
+    }
+
+    [Fact]
     public void Generate_ReportsNoMissionOnSimulationStop()
     {
         string stop = Lua[Lua.IndexOf("onSimulationStop")..];

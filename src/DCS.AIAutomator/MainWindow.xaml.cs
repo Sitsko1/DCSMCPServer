@@ -39,7 +39,7 @@ public sealed partial class MainWindow : Window
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _animationsEnabled = new UISettings().AnimationsEnabled;
 
-        AppWindow.Resize(new SizeInt32(420, 520));
+        AppWindow.Resize(new SizeInt32(420, 760)); // room for the aircraft status expander
 
         var toastHost = new ToastHost(notifications, settings)
         {
@@ -96,6 +96,7 @@ public sealed partial class MainWindow : Window
         RenderBridge();
         RenderDcs();
         RenderMission();
+        RenderAircraft();
     }
 
     private void RenderBridge()
@@ -140,6 +141,35 @@ public sealed partial class MainWindow : Window
             AircraftText.Text = mission.Aircraft;
             MissionNameText.Text = mission.MissionName;
             TerrainText.Text = mission.Terrain;
+        }
+    }
+
+    private void RenderAircraft()
+    {
+        AircraftState? a = _status.Aircraft;
+        NoAircraftText.Visibility = a is null ? Visibility.Visible : Visibility.Collapsed;
+        AircraftDetailPanel.Visibility = a is null ? Visibility.Collapsed : Visibility.Visible;
+        if (a is null) return;
+
+        // Same formatter as the get_aircraft_state MCP tool, so the panel and the LLM always agree.
+        UnitSystem u = _status.Units;
+        PositionText.Text = AircraftStateFormatter.Position(a.Latitude, a.Longitude);
+        AltMslText.Text = AircraftStateFormatter.Altitude(a.AltitudeMslMeters, u);
+        AltAglText.Text = AircraftStateFormatter.Altitude(a.AltitudeAglMeters, u);
+        IasText.Text = AircraftStateFormatter.Speed(a.IndicatedAirspeedMps, u);
+        TasText.Text = AircraftStateFormatter.Speed(a.TrueAirspeedMps, u);
+        MachText.Text = AircraftStateFormatter.Mach(a.Mach);
+        VsText.Text = AircraftStateFormatter.VerticalSpeed(a.VerticalSpeedMps, u);
+        HeadingText.Text = AircraftStateFormatter.Heading(a.MagneticHeadingRadians);
+
+        FaultsText.Text = AircraftStateFormatter.Failures(a.Failures);
+        if (a.Failures is { Count: > 0 })
+        {
+            FaultsText.Foreground = new SolidColorBrush(FaultColor); // active faults: fault accent
+        }
+        else
+        {
+            FaultsText.ClearValue(TextBlock.ForegroundProperty); // back to the style's quiet colour
         }
     }
 

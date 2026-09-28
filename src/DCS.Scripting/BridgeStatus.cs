@@ -54,6 +54,36 @@ public sealed class BridgeStatus
         }
     }
 
+    private AircraftState? _aircraft;
+    /// <summary>The player aircraft's latest state (~5 Hz); null when there's no player aircraft.</summary>
+    public AircraftState? Aircraft
+    {
+        get => _aircraft;
+        set
+        {
+            if (_aircraft == value) return;
+            _aircraft = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private UnitSystem _units = UnitSystem.Imperial;
+    /// <summary>
+    /// Display units for aircraft state, for the UI and the get_aircraft_state tool. Set by the
+    /// app from its settings; lives here (not in the host's startup parameters) so changing it
+    /// takes effect immediately, without restarting the bridge or reconnecting to DCS.
+    /// </summary>
+    public UnitSystem Units
+    {
+        get => _units;
+        set
+        {
+            if (_units == value) return;
+            _units = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     private string _mcpEndpoint = "—";
     /// <summary>The MCP server's actual listen URL + route, e.g. "http://127.0.0.1:5270/mcp". Set by DcsMcpBridgeHost.StartAsync so the UI never hardcodes it.</summary>
     public string McpEndpoint

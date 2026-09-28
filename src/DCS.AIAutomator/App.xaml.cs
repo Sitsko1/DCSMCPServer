@@ -44,6 +44,7 @@ public partial class App : Application
         _notifications = new NotificationService(DispatcherQueue.GetForCurrentThread());
         _bridgeHost = new DcsMcpBridgeHost();
         _statusNotifier = new BridgeStatusNotifier(_bridgeHost.Status, _notifications);
+        _bridgeHost.Status.Units = _settings.Units;
 
         var mainWindow = new MainWindow(_bridgeHost.Status, _notifications, _settings);
         mainWindow.Closed += OnWindowClosed;
@@ -70,16 +71,18 @@ public partial class App : Application
     {
         if (_settingsWindow is null)
         {
-            _settingsWindow = new SettingsWindow(_settings, RestartBridgeAsync, _notifications!);
+            _settingsWindow = new SettingsWindow(_settings, ApplySettingsAsync, _notifications!);
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             ApplyTheme(_settingsWindow);
         }
         _settingsWindow.Activate();
     }
 
-    private async Task RestartBridgeAsync()
+    private async Task ApplySettingsAsync(bool restartBridge)
     {
         if (_bridgeHost is null) return;
+        _bridgeHost.Status.Units = _settings.Units; // takes effect immediately, no restart needed
+        if (!restartBridge) return;
         await _bridgeHost.StopAsync();
         await _bridgeHost.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort);
     }
