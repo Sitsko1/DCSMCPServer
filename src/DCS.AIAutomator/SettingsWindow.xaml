@@ -53,7 +53,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                 <TextBlock Text="DCS host" Style="{StaticResource SettingsCardTitleStyle}" />
-                                <TextBlock Text="Address DCS's Export.lua socket is reachable at. Leave as 127.0.0.1 unless DCS runs on another machine." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                                <TextBlock Text="Address DCS's Hooks script socket is reachable at. Leave as 127.0.0.1 unless DCS runs on another machine." Style="{StaticResource SettingsCardDescriptionStyle}" />
                             </StackPanel>
                             <TextBox x:Name="DcsHostBox" Grid.Column="1" VerticalAlignment="Center" />
                         </Grid>
@@ -67,7 +67,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                 <TextBlock Text="DCS port" Style="{StaticResource SettingsCardTitleStyle}" />
-                                <TextBlock Text="Port the deployed Export.lua script listens on for this app to connect to." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                                <TextBlock Text="Port the deployed Hooks script listens on for this app to connect to." Style="{StaticResource SettingsCardDescriptionStyle}" />
                             </StackPanel>
                             <NumberBox x:Name="DcsPortBox" Grid.Column="1" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" />
                         </Grid>
@@ -101,7 +101,7 @@
                         <StackPanel Spacing="8">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="DCS Saved Games path" Style="{StaticResource SettingsCardTitleStyle}" />
-                                <TextBlock Text="Where DCS stores this user's Scripts folder — Export.lua gets deployed here." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                                <TextBlock Text="Where DCS stores this user's Scripts folder — the Hooks script gets deployed here." Style="{StaticResource SettingsCardDescriptionStyle}" />
                             </StackPanel>
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
@@ -122,8 +122,8 @@
                     <Border Style="{StaticResource SettingsCardStyle}">
                         <StackPanel Spacing="8">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="Export.lua integration" Style="{StaticResource SettingsCardTitleStyle}" />
-                                <TextBlock Text="Generates DCSMcpBridgeExport.lua in the Saved Games Scripts folder and wires it into Export.lua (appending a dofile line, without touching any other tool's hooks — a backup is made first). Safe to run again after changing the DCS port above." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                                <TextBlock Text="DCS Hooks script" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="Writes DCSMcpBridgeHooks.lua to Saved Games\DCS\Scripts\Hooks, which DCS loads on startup — Export.lua is not modified. Also removes this app's script from older versions out of Export.lua (other tools' lines are kept, and a backup is made). Restart DCS after deploying. Safe to run again after changing the DCS port." Style="{StaticResource SettingsCardDescriptionStyle}" />
                             </StackPanel>
                             <Button Content="Deploy Lua scripts" Click="OnDeployClicked" HorizontalAlignment="Left" />
                             <TextBlock x:Name="DeployStatusText" Style="{StaticResource SubtleMonoStyle}" Text="—" />

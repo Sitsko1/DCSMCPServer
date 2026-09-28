@@ -28,6 +28,19 @@ public class DcsTelemetryParserTests
         Assert.Equal("A", mission!.Aircraft);
     }
 
+    [Theory]
+    [InlineData("PersianGulf", "Persian Gulf")]
+    [InlineData("Falklands", "South Atlantic")]
+    [InlineData("SinaiMap", "Sinai")]
+    [InlineData("Caucasus", "Caucasus")]
+    [InlineData("SomeFutureMap", "SomeFutureMap")] // unknown theatre IDs pass through unchanged
+    public void TryParse_MapsTheatreIdToReadableTerrainName(string theatre, string expected)
+    {
+        DcsTelemetryParser.TryParse($$"""{"missionActive":true,"terrain":"{{theatre}}"}""", out MissionInfo? mission);
+
+        Assert.Equal(expected, mission!.Terrain);
+    }
+
     [Fact]
     public void TryParse_InactiveMission_ReturnsTrueWithNullMission()
     {

@@ -9,7 +9,7 @@ using WinRT.Interop;
 namespace DCS.AIAutomator;
 
 /// <summary>
-/// Settings for the MCP/DCS connection, DCS file paths, and Export.lua deployment. Changes are
+/// Settings for the MCP/DCS connection, DCS file paths, and Hooks script deployment. Changes are
 /// staged in the controls and only take effect (persisted + bridge restarted) on Save.
 /// </summary>
 public sealed partial class SettingsWindow : Window
@@ -109,7 +109,7 @@ public sealed partial class SettingsWindow : Window
 
     private void OnDeployClicked(object sender, RoutedEventArgs e)
     {
-        var result = LuaExportDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
+        var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
         DeployStatusText.Text = result.Success ? result.Message : $"Failed: {result.Message}";
         _notifications.Show(
             result.Success ? "Lua scripts deployed" : "Lua deploy failed",
