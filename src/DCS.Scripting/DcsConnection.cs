@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace DCS.Scripting;
 
 /// <summary>
-/// Owns the persistent TCP connection to DCS World's Export.lua socket. Registered as both a
+/// Owns the persistent TCP connection to the DCS Hooks script's socket. Registered as both a
 /// singleton (so tool classes can inject it to send Lua) and a hosted service (so its connect
 /// loop runs for the app's lifetime) — see DcsScriptingServiceCollectionExtensions.
 /// </summary>
@@ -71,6 +71,15 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                         _status.CurrentMission = mission;
                         _status.Aircraft = aircraft;
                     }
+                }
+
+                // ReadLineAsync returned null: DCS closed the connection (e.g. the process was
+                // killed). That's not an exception, and TcpClient.Connected still reports true (it
+                // only reflects the last I/O), so without this the loop would spin on the dead
+                // stream and the UI would keep showing "connected". Take the disconnect path.
+                if (!stoppingToken.IsCancellationRequested)
+                {
+                    throw new IOException("DCS closed the connection.");
                 }
             }
             catch (Exception ex)
