@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using DCS.Scripting;
 using Windows.Storage;
 
 namespace DCS.AIAutomator;
@@ -52,6 +53,12 @@ public sealed class SettingsService
     {
         get => GetInt(nameof(ToastDurationSeconds), 5);
         set => _values.Values[nameof(ToastDurationSeconds)] = value;
+    }
+
+    public UnitSystem Units
+    {
+        get => Enum.TryParse(GetString(nameof(Units), nameof(UnitSystem.Imperial)), out UnitSystem u) ? u : UnitSystem.Imperial;
+        set => _values.Values[nameof(Units)] = value.ToString();
     }
 
     public string McpListenUrl => $"http://127.0.0.1:{McpPort}";

@@ -54,6 +54,76 @@ public class LuaHooksScriptGeneratorTests
         Assert.DoesNotContain("LoGetMissionInfo", Lua);
 
     [Fact]
+    public void Generate_SendsOwnshipStateFromExportApi()
+    {
+        Assert.Contains("\"ownship\"", Lua);
+        foreach (string call in new[]
+        {
+            "Export.LoGetAltitudeAboveSeaLevel()", "Export.LoGetAltitudeAboveGroundLevel()",
+            "Export.LoGetIndicatedAirSpeed()", "Export.LoGetTrueAirSpeed()", "Export.LoGetMachNumber()",
+            "Export.LoGetVerticalVelocity()", "Export.LoGetMagneticYaw()", "Export.LoGetMCPState()",
+            "LatLongAlt",
+        })
+        {
+            Assert.Contains(call, Lua);
+        }
+    }
+
+    [Fact]
+    public void Generate_ReportsOnlyFailureFlags_NotPlainStateFlags()
+    {
+        Assert.Contains("\"LeftEngineFailure\"", Lua);
+        Assert.Contains("\"FuelTankDamage\"", Lua);
+        Assert.Contains("\"MasterWarning\"", Lua);
+        Assert.DoesNotContain("AutopilotOn", Lua);
+        Assert.DoesNotContain("CanopyOpen", Lua);
+    }
+
+    [Fact]
+    public void Generate_ThrottlesTelemetry_ButDrainsCommandsEveryFrame()
+    {
+        Assert.Contains("TELEMETRY_INTERVAL = 0.2", Lua); // invariant culture, never "0,2"
+        Assert.Contains("Export.LoGetModelTime()", Lua);
+
+        string frame = Lua[Lua.IndexOf("function mcpBridgeCallbacks.onSimulationFrame")..];
+        int readCommands = frame.IndexOf("mcpBridgeReadCommands()");
+        int throttleCheck = frame.IndexOf("TELEMETRY_INTERVAL");
+        Assert.True(readCommands >= 0 && readCommands < throttleCheck,
+            "commands must be drained before (outside) the telemetry throttle");
+    }
+
+    [Fact]
+    public void Generate_SendsHeartbeatOnRealTime_OutsideTheTelemetryThrottle()
+    {
+        Assert.Contains("HEARTBEAT_INTERVAL = 1", Lua);
+        Assert.Contains("{\"heartbeat\":true}", Lua);
+        // Real (wall-clock) time keeps advancing while paused; the telemetry throttle's model
+        // time doesn't.
+        Assert.Contains("Sim.getRealTime()", Lua);
+
+        string frame = Lua[Lua.IndexOf("function mcpBridgeCallbacks.onSimulationFrame")..];
+        int heartbeat = frame.IndexOf("mcpBridgeSendHeartbeat()");
+        int throttle = frame.IndexOf("TELEMETRY_INTERVAL");
+        Assert.True(heartbeat >= 0 && heartbeat < throttle, "heartbeat must not sit behind the telemetry throttle");
+    }
+
+    [Fact]
+    public void Generate_ReportsPauseAndResume()
+    {
+        Assert.Contains("{\"paused\":true}", FunctionBody("function mcpBridgeCallbacks.onSimulationPause"));
+        Assert.Contains("{\"paused\":false}", FunctionBody("function mcpBridgeCallbacks.onSimulationResume"));
+    }
+
+    // From a function's declaration up to the next function declaration.
+    private static string FunctionBody(string declaration)
+    {
+        int start = Lua.IndexOf(declaration);
+        Assert.True(start >= 0, $"{declaration} not found");
+        int next = Lua.IndexOf("function ", start + declaration.Length);
+        return Lua[start..(next < 0 ? Lua.Length : next)];
+    }
+
+    [Fact]
     public void Generate_ReportsNoMissionOnSimulationStop()
     {
         string stop = Lua[Lua.IndexOf("onSimulationStop")..];

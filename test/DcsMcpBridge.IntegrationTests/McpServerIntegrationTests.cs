@@ -1,3 +1,4 @@
+using DCS.Scripting;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
@@ -63,5 +64,84 @@ public class McpServerIntegrationTests : IAsyncLifetime
         // No real DCS instance is listening on 127.0.0.1:1025 in the test environment — this is
         // the correct, expected response, not a failure.
         Assert.Equal("Error: DCS interface is down.", resultText);
+    }
+
+    [Fact]
+    public async Task ListTools_IncludesGetAircraftState()
+    {
+        IList<McpClientTool> tools = await _client.ListToolsAsync();
+
+        Assert.Contains(tools, t => t.Name == "get_aircraft_state");
+    }
+
+    [Fact]
+    public async Task CallTool_GetAircraftState_WithNoAircraft_SaysSoInsteadOfZeros()
+    {
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.StartsWith("No active aircraft", text);
+        Assert.DoesNotContain("0 ft", text);
+    }
+
+    [Theory]
+    [InlineData(UnitSystem.Imperial, "9,843 ft MSL", "194 kt")]
+    [InlineData(UnitSystem.Metric, "3,000 m MSL", "360 km/h")]
+    public async Task CallTool_GetAircraftState_ReturnsSnapshotInConfiguredUnits(
+        UnitSystem units, string expectedAltitude, string expectedIas)
+    {
+        // State injected straight into the shared BridgeStatus, as DcsConnection would set it.
+        _host.Status.Units = units;
+        _host.Status.CurrentMission = new MissionInfo("Quick Start", "Caucasus", "F/A-18C");
+        _host.Status.Aircraft = new AircraftState(
+            Latitude: 41.5, Longitude: 41.75, AltitudeMslMeters: 3000, AltitudeAglMeters: 2900,
+            IndicatedAirspeedMps: 100, TrueAirspeedMps: 110, Mach: 0.33, VerticalSpeedMps: 0,
+            MagneticHeadingRadians: Math.PI, Failures: ["GearFailure"]);
+
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.Contains("F/A-18C", text);
+        Assert.Contains(expectedAltitude, text);
+        Assert.Contains(expectedIas, text);
+        Assert.Contains("180°", text);
+        Assert.Contains("Gear failure", text);
+    }
+
+    [Fact]
+    public async Task CallTool_GetAircraftState_WhenDcsNotResponding_SaysSoWithDataAge()
+    {
+        InjectAircraft();
+        _host.Status.LastTelemetryUtc = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(12);
+        _host.Status.DcsNotResponding = true;
+
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.StartsWith("DCS not responding", text);
+        Assert.Matches(@"last update 1\d s ago", text); // 12 s, allowing for test latency
+        Assert.Contains("stale", text);
+        Assert.Contains("F/A-18C", text); // held values still shown, clearly labelled
+    }
+
+    [Fact]
+    public async Task CallTool_GetAircraftState_WhenPaused_NotesIt()
+    {
+        InjectAircraft();
+        _host.Status.DcsPaused = true;
+
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.StartsWith("DCS is paused", text);
+        Assert.Contains("F/A-18C", text);
+    }
+
+    private void InjectAircraft()
+    {
+        _host.Status.CurrentMission = new MissionInfo("Quick Start", "Caucasus", "F/A-18C");
+        _host.Status.Aircraft = new AircraftState(1, 2, 3000, 2900, 100, 110, 0.33, 0, 0, []);
+    }
+
+    private async Task<string> CallGetAircraftStateAsync()
+    {
+        CallToolResult result = await _client.CallToolAsync("get_aircraft_state", new Dictionary<string, object?>());
+        return result.Content.OfType<TextContentBlock>().First().Text;
     }
 }

@@ -7,7 +7,8 @@ namespace DCS.AIAutomator;
 /// Translates <see cref="BridgeStatus"/> state transitions into user-facing notifications. The
 /// status object exposes a single coarse <see cref="BridgeStatus.Changed"/> event, so this class
 /// tracks the previous value of each observable and raises a notification only on an actual
-/// transition (bridge start/stop/fault, DCS connect/disconnect, mission start).
+/// transition (bridge start/stop/fault, DCS connect/disconnect, DCS not responding/recovered,
+/// mission start). Pause/resume deliberately raise nothing — the annunciator shows it.
 /// </summary>
 public sealed class BridgeStatusNotifier
 {
@@ -16,6 +17,7 @@ public sealed class BridgeStatusNotifier
 
     private BridgeState _lastBridgeState;
     private bool _lastDcsConnected;
+    private bool _lastDcsNotResponding;
     private string? _lastMissionName;
 
     public BridgeStatusNotifier(BridgeStatus status, NotificationService notifications)
@@ -25,6 +27,7 @@ public sealed class BridgeStatusNotifier
 
         _lastBridgeState = status.BridgeState;
         _lastDcsConnected = status.DcsConnected;
+        _lastDcsNotResponding = status.DcsNotResponding;
         _lastMissionName = status.CurrentMission?.MissionName;
 
         status.Changed += OnStatusChanged;
@@ -62,6 +65,21 @@ public sealed class BridgeStatusNotifier
             else
             {
                 _notifications.Show("DCS disconnected", "Connection to DCS was lost.", NotificationSeverity.Warning);
+            }
+        }
+
+        if (_status.DcsNotResponding != _lastDcsNotResponding)
+        {
+            _lastDcsNotResponding = _status.DcsNotResponding;
+            if (_status.DcsNotResponding)
+            {
+                _notifications.Show("DCS not responding", "No data from DCS mid-mission. Showing last known values; waiting for it to recover.", NotificationSeverity.Warning);
+            }
+            else if (_status.DcsConnected)
+            {
+                // Recovered on the same connection (a disconnect clears the flag too, but that
+                // already has its own "DCS disconnected" notification).
+                _notifications.Show("DCS responding again", "Live data from DCS has resumed.", NotificationSeverity.Success);
             }
         }
 

@@ -39,7 +39,7 @@ public sealed partial class MainWindow : Window
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _animationsEnabled = new UISettings().AnimationsEnabled;
 
-        AppWindow.Resize(new SizeInt32(420, 520));
+        AppWindow.Resize(new SizeInt32(420, 760)); // room for the aircraft status expander
 
         var toastHost = new ToastHost(notifications, settings)
         {
@@ -96,6 +96,7 @@ public sealed partial class MainWindow : Window
         RenderBridge();
         RenderDcs();
         RenderMission();
+        RenderAircraft();
     }
 
     private void RenderBridge()
@@ -118,11 +119,15 @@ public sealed partial class MainWindow : Window
 
     private void RenderDcs()
     {
-        bool connected = _status.DcsConnected;
-        Color color = connected ? NominalColor : IdleColor;
+        // Not responding = connected but DCS has gone silent mid-mission (hung); paused is quiet.
+        var (color, label) =
+            !_status.DcsConnected ? (IdleColor, "DISCONNECTED")
+            : _status.DcsNotResponding ? (WarningColor, "NOT RESPONDING")
+            : _status.DcsPaused ? (IdleColor, "PAUSED")
+            : (NominalColor, "CONNECTED");
 
         DcsLamp.Background = new SolidColorBrush(color);
-        DcsStateText.Text = connected ? "CONNECTED" : "DISCONNECTED";
+        DcsStateText.Text = label;
         DcsStateText.Foreground = new SolidColorBrush(color);
         DcsAddressText.Text = _status.DcsEndpoint;
     }
@@ -140,6 +145,46 @@ public sealed partial class MainWindow : Window
             AircraftText.Text = mission.Aircraft;
             MissionNameText.Text = mission.MissionName;
             TerrainText.Text = mission.Terrain;
+        }
+    }
+
+    private void RenderAircraft()
+    {
+        AircraftState? a = _status.Aircraft;
+        NoAircraftText.Visibility = a is null ? Visibility.Visible : Visibility.Collapsed;
+        AircraftDetailPanel.Visibility = a is null ? Visibility.Collapsed : Visibility.Visible;
+        if (a is null) return;
+
+        // Values stop updating while paused or hung; say so rather than look live.
+        bool held = _status.DcsNotResponding || _status.DcsPaused;
+        AircraftHeldText.Visibility = held ? Visibility.Visible : Visibility.Collapsed;
+        if (held)
+        {
+            AircraftHeldText.Text = _status.DcsNotResponding
+                ? "HELD — DCS NOT RESPONDING, LAST KNOWN VALUES"
+                : "HELD — DCS PAUSED";
+            AircraftHeldText.Foreground = new SolidColorBrush(_status.DcsNotResponding ? WarningColor : IdleColor);
+        }
+
+        // Same formatter as the get_aircraft_state MCP tool, so the panel and the LLM always agree.
+        UnitSystem u = _status.Units;
+        PositionText.Text = AircraftStateFormatter.Position(a.Latitude, a.Longitude);
+        AltMslText.Text = AircraftStateFormatter.Altitude(a.AltitudeMslMeters, u);
+        AltAglText.Text = AircraftStateFormatter.Altitude(a.AltitudeAglMeters, u);
+        IasText.Text = AircraftStateFormatter.Speed(a.IndicatedAirspeedMps, u);
+        TasText.Text = AircraftStateFormatter.Speed(a.TrueAirspeedMps, u);
+        MachText.Text = AircraftStateFormatter.Mach(a.Mach);
+        VsText.Text = AircraftStateFormatter.VerticalSpeed(a.VerticalSpeedMps, u);
+        HeadingText.Text = AircraftStateFormatter.Heading(a.MagneticHeadingRadians);
+
+        FaultsText.Text = AircraftStateFormatter.Failures(a.Failures);
+        if (a.Failures is { Count: > 0 })
+        {
+            FaultsText.Foreground = new SolidColorBrush(FaultColor); // active faults: fault accent
+        }
+        else
+        {
+            FaultsText.ClearValue(TextBlock.ForegroundProperty); // back to the style's quiet colour
         }
     }
 

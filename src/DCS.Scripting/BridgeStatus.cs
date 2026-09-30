@@ -42,6 +42,39 @@ public sealed class BridgeStatus
         }
     }
 
+    private bool _dcsPaused;
+    /// <summary>The DCS simulation is paused (reported by the Hooks script's pause/resume callbacks).</summary>
+    public bool DcsPaused
+    {
+        get => _dcsPaused;
+        set
+        {
+            if (_dcsPaused == value) return;
+            _dcsPaused = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private bool _dcsNotResponding;
+    /// <summary>
+    /// Connected, mid-mission and unpaused, but no line from DCS within the timeout — i.e. DCS is
+    /// frozen/hung. The socket stays open (it may recover); last known state is held, not cleared.
+    /// </summary>
+    public bool DcsNotResponding
+    {
+        get => _dcsNotResponding;
+        set
+        {
+            if (_dcsNotResponding == value) return;
+            _dcsNotResponding = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>When the last line of any kind arrived from DCS; null before the first one.
+    /// Deliberately doesn't raise <see cref="Changed"/> (it updates several times a second).</summary>
+    public DateTimeOffset? LastTelemetryUtc { get; set; }
+
     private MissionInfo? _currentMission;
     public MissionInfo? CurrentMission
     {
@@ -50,6 +83,36 @@ public sealed class BridgeStatus
         {
             if (_currentMission == value) return;
             _currentMission = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private AircraftState? _aircraft;
+    /// <summary>The player aircraft's latest state (~5 Hz); null when there's no player aircraft.</summary>
+    public AircraftState? Aircraft
+    {
+        get => _aircraft;
+        set
+        {
+            if (_aircraft == value) return;
+            _aircraft = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private UnitSystem _units = UnitSystem.Imperial;
+    /// <summary>
+    /// Display units for aircraft state, for the UI and the get_aircraft_state tool. Set by the
+    /// app from its settings; lives here (not in the host's startup parameters) so changing it
+    /// takes effect immediately, without restarting the bridge or reconnecting to DCS.
+    /// </summary>
+    public UnitSystem Units
+    {
+        get => _units;
+        set
+        {
+            if (_units == value) return;
+            _units = value;
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }

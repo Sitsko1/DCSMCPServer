@@ -37,6 +37,10 @@ grepping file by file. After significant code changes, refresh it with `/graphif
   - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
     (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Depends on
     `IDcsConnection` so tests use `FakeDcsConnection`.
+  - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
+    `BridgeStatus` only (never the connection). Values are formatted by
+    `AircraftStateFormatter`/`UnitConversion`, the **single** formatting path shared with the
+    main window's aircraft panel — don't format units anywhere else, or the two will drift.
   - `DcsConnection` — `BackgroundService` owning the TCP connection to the DCS script (3s
     reconnect loop); sends Lua commands and parses each incoming line as telemetry into
     `BridgeStatus`. **Keep dependencies one-directional (tool → connection, never back).**
@@ -63,9 +67,12 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     read from the active `ThemeDictionaries` entry at runtime (no `{ThemeResource}` markup
     available in code-behind).
   - `MainWindow` — "glass cockpit" annunciator panel with a fixed palette, deliberately not
-    Mica.
+    Mica. Below the mission readout, an "Aircraft status" `Expander` renders
+    `BridgeStatus.Aircraft` (~5 Hz) in `BridgeStatus.Units`.
   - `SettingsWindow` — nothing persists until **Save**, which writes via `SettingsService`
-    and calls `App.RestartBridgeAsync` so port/host changes apply without an app restart.
+    and calls `App.ApplySettingsAsync(restartBridge)`. The bridge (and so the DCS connection)
+    restarts only when the MCP port or DCS host/port changed; everything else, including
+    units (held on the shared `BridgeStatus`), applies without a restart.
   - `Themes/ThemeResources.xaml` — brushes (per-theme `ThemeDictionaries`), fonts, shared
     styles; merged into `App.xaml`.
 - **`test/DcsMcpBridge.UnitTests`** — xUnit; tools against `FakeDcsConnection`, parser against
@@ -79,8 +86,29 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 `DcsTelemetryParser` expects one JSON object per line from the DCS script:
 
 ```json
-{"missionActive": true, "missionName": "...", "terrain": "PersianGulf", "aircraft": "F/A-18C"}
+{"missionActive": true, "missionName": "...", "terrain": "PersianGulf", "aircraft": "F/A-18C",
+ "ownship": {"lat": 41.5, "lon": 41.7, "altMsl": 3000.0, "altAgl": 2950.0, "ias": 150.0,
+             "tas": 160.0, "mach": 0.48, "vs": -5.5, "hdg": 1.5708, "failures": ["GearFailure"]}}
 ```
+
+`ownship` is sent only when there's a player aircraft, in DCS's SI units (m, m/s, rad) —
+conversion is C#-side only. Any value may be `null`; `failures: null` means DCS gave no failure
+data ("Unavailable"), `[]` means none active. Telemetry is throttled to ~5 Hz on model time
+(`TelemetryIntervalSeconds`), but commands are drained every frame.
+
+Besides mission reports, the script sends `{"heartbeat":true}` (~1/s on `Sim.getRealTime()`,
+independent of the telemetry throttle) and `{"paused":true|false}` (from
+`onSimulationPause`/`onSimulationResume`). **Only lines carrying `missionActive` are mission
+reports** — `DcsTelemetryMessage.MissionActive` is `bool?` on purpose, because reading an
+absent field as `false` would clear the mission on every heartbeat. `TryParse` returns a
+`DcsLine` saying which kind it was; any new message type must stay a non-mission-report too.
+
+`DcsConnection`'s watchdog sets `BridgeStatus.DcsNotResponding` when a connected, mid-mission,
+unpaused DCS sends nothing for `DefaultNotRespondingTimeout` (5 s) — a hung DCS, which unlike a
+killed one keeps its socket open. It never closes the socket (maintainer decision: keep
+waiting); any line clears it. A freeze in the DCS menus can't be detected: no Hooks callback
+runs there. Unverified live: whether `onSimulationFrame` keeps firing while paused (the
+`paused` line makes it not matter).
 
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
 `CurrentMission`, a garbage line leaves prior state alone; missing fields default to

@@ -1,17 +1,30 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace DCS.Scripting;
 
 /// <summary>
-/// Wire contract for DCS-side telemetry: one JSON object per line, written to Export.lua's
-/// socket alongside (or instead of) raw export data. Adjust this shape to match whatever the
-/// actual Export.lua script emits — this is the assumed default, not a fixed protocol.
+/// Wire contract for DCS-side telemetry: one JSON object per line, written by the Hooks script
+/// (LuaHooksScriptGenerator). Keep the two in sync by hand — nothing enforces it across the
+/// language boundary.
 /// </summary>
 public sealed class DcsTelemetryMessage
 {
+    /// <summary>
+    /// Present only on mission reports. Must stay nullable: heartbeat/pause lines omit it, and
+    /// reading "absent" as false would clear the mission on every heartbeat.
+    /// </summary>
     [JsonPropertyName("missionActive")]
-    public bool MissionActive { get; set; }
+    public bool? MissionActive { get; set; }
+
+    /// <summary>Keep-alive sent ~1/s on real time during simulation; its arrival is all that matters.</summary>
+    [JsonPropertyName("heartbeat")]
+    public bool? Heartbeat { get; set; }
+
+    /// <summary>Sent on simulation pause (true) and resume (false).</summary>
+    [JsonPropertyName("paused")]
+    public bool? Paused { get; set; }
 
     [JsonPropertyName("missionName")]
     public string? MissionName { get; set; }
@@ -21,12 +34,38 @@ public sealed class DcsTelemetryMessage
 
     [JsonPropertyName("aircraft")]
     public string? Aircraft { get; set; }
+
+    /// <summary>Absent when there's no player aircraft (spectator, dead, menus).</summary>
+    [JsonPropertyName("ownship")]
+    public OwnshipTelemetry? Ownship { get; set; }
+}
+
+/// <summary>Player aircraft state in DCS's SI units; see <see cref="AircraftState"/>.</summary>
+public sealed class OwnshipTelemetry
+{
+    [JsonPropertyName("lat")] public double? Lat { get; set; }
+    [JsonPropertyName("lon")] public double? Lon { get; set; }
+    [JsonPropertyName("altMsl")] public double? AltMsl { get; set; }
+    [JsonPropertyName("altAgl")] public double? AltAgl { get; set; }
+    [JsonPropertyName("ias")] public double? Ias { get; set; }
+    [JsonPropertyName("tas")] public double? Tas { get; set; }
+    [JsonPropertyName("mach")] public double? Mach { get; set; }
+    [JsonPropertyName("vs")] public double? Vs { get; set; }
+    [JsonPropertyName("hdg")] public double? Hdg { get; set; }
+    [JsonPropertyName("failures")] public List<string>? Failures { get; set; }
 }
 
 [JsonSerializable(typeof(DcsTelemetryMessage))]
 internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 {
 }
+
+/// <summary>One parsed line from DCS.</summary>
+/// <param name="IsMissionReport">The line carried "missionActive" — only these change the mission/aircraft state.</param>
+/// <param name="Mission">For a mission report: the active mission, or null for "no mission".</param>
+/// <param name="Aircraft">For a mission report: the player aircraft, or null when there isn't one.</param>
+/// <param name="Paused">Set by pause/resume lines; null when the line says nothing about pausing.</param>
+public sealed record DcsLine(bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused);
 
 public static class DcsTelemetryParser
 {
@@ -47,13 +86,13 @@ public static class DcsTelemetryParser
         TerrainNames.TryGetValue(theatre, out string? name) ? name : theatre;
 
     /// <summary>
-    /// Parses one telemetry line. Returns false for garbage/malformed input (caller should
-    /// leave prior state untouched). Returns true with <paramref name="mission"/> null when the
-    /// line is a valid "no mission active" report, or non-null when a mission is active.
+    /// Parses one line from DCS. Returns false for garbage/malformed input (caller should leave
+    /// prior state untouched). Heartbeat and pause lines parse fine but aren't mission reports,
+    /// so they must not touch the mission/aircraft state.
     /// </summary>
-    public static bool TryParse(string line, out MissionInfo? mission)
+    public static bool TryParse(string line, [NotNullWhen(true)] out DcsLine? parsed)
     {
-        mission = null;
+        parsed = null;
 
         DcsTelemetryMessage? message;
         try
@@ -70,14 +109,22 @@ public static class DcsTelemetryParser
             return false;
         }
 
-        if (message.MissionActive)
+        MissionInfo? mission = null;
+        AircraftState? aircraft = null;
+        if (message.MissionActive == true)
         {
             mission = new MissionInfo(
                 message.MissionName ?? "Unknown",
                 TerrainDisplayName(message.Terrain ?? "Unknown"),
                 message.Aircraft ?? "Unknown");
+
+            if (message.Ownship is { } o)
+            {
+                aircraft = new AircraftState(o.Lat, o.Lon, o.AltMsl, o.AltAgl, o.Ias, o.Tas, o.Mach, o.Vs, o.Hdg, o.Failures);
+            }
         }
 
+        parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused);
         return true;
     }
 }
