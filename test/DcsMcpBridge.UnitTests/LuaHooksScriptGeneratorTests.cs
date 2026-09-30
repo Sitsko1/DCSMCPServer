@@ -93,6 +93,37 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_SendsHeartbeatOnRealTime_OutsideTheTelemetryThrottle()
+    {
+        Assert.Contains("HEARTBEAT_INTERVAL = 1", Lua);
+        Assert.Contains("{\"heartbeat\":true}", Lua);
+        // Real (wall-clock) time keeps advancing while paused; the telemetry throttle's model
+        // time doesn't.
+        Assert.Contains("Sim.getRealTime()", Lua);
+
+        string frame = Lua[Lua.IndexOf("function mcpBridgeCallbacks.onSimulationFrame")..];
+        int heartbeat = frame.IndexOf("mcpBridgeSendHeartbeat()");
+        int throttle = frame.IndexOf("TELEMETRY_INTERVAL");
+        Assert.True(heartbeat >= 0 && heartbeat < throttle, "heartbeat must not sit behind the telemetry throttle");
+    }
+
+    [Fact]
+    public void Generate_ReportsPauseAndResume()
+    {
+        Assert.Contains("{\"paused\":true}", FunctionBody("function mcpBridgeCallbacks.onSimulationPause"));
+        Assert.Contains("{\"paused\":false}", FunctionBody("function mcpBridgeCallbacks.onSimulationResume"));
+    }
+
+    // From a function's declaration up to the next function declaration.
+    private static string FunctionBody(string declaration)
+    {
+        int start = Lua.IndexOf(declaration);
+        Assert.True(start >= 0, $"{declaration} not found");
+        int next = Lua.IndexOf("function ", start + declaration.Length);
+        return Lua[start..(next < 0 ? Lua.Length : next)];
+    }
+
+    [Fact]
     public void Generate_ReportsNoMissionOnSimulationStop()
     {
         string stop = Lua[Lua.IndexOf("onSimulationStop")..];

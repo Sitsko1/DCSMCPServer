@@ -106,6 +106,39 @@ public class McpServerIntegrationTests : IAsyncLifetime
         Assert.Contains("Gear failure", text);
     }
 
+    [Fact]
+    public async Task CallTool_GetAircraftState_WhenDcsNotResponding_SaysSoWithDataAge()
+    {
+        InjectAircraft();
+        _host.Status.LastTelemetryUtc = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(12);
+        _host.Status.DcsNotResponding = true;
+
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.StartsWith("DCS not responding", text);
+        Assert.Matches(@"last update 1\d s ago", text); // 12 s, allowing for test latency
+        Assert.Contains("stale", text);
+        Assert.Contains("F/A-18C", text); // held values still shown, clearly labelled
+    }
+
+    [Fact]
+    public async Task CallTool_GetAircraftState_WhenPaused_NotesIt()
+    {
+        InjectAircraft();
+        _host.Status.DcsPaused = true;
+
+        string text = await CallGetAircraftStateAsync();
+
+        Assert.StartsWith("DCS is paused", text);
+        Assert.Contains("F/A-18C", text);
+    }
+
+    private void InjectAircraft()
+    {
+        _host.Status.CurrentMission = new MissionInfo("Quick Start", "Caucasus", "F/A-18C");
+        _host.Status.Aircraft = new AircraftState(1, 2, 3000, 2900, 100, 110, 0.33, 0, 0, []);
+    }
+
     private async Task<string> CallGetAircraftStateAsync()
     {
         CallToolResult result = await _client.CallToolAsync("get_aircraft_state", new Dictionary<string, object?>());

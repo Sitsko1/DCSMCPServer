@@ -42,6 +42,39 @@ public sealed class BridgeStatus
         }
     }
 
+    private bool _dcsPaused;
+    /// <summary>The DCS simulation is paused (reported by the Hooks script's pause/resume callbacks).</summary>
+    public bool DcsPaused
+    {
+        get => _dcsPaused;
+        set
+        {
+            if (_dcsPaused == value) return;
+            _dcsPaused = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private bool _dcsNotResponding;
+    /// <summary>
+    /// Connected, mid-mission and unpaused, but no line from DCS within the timeout — i.e. DCS is
+    /// frozen/hung. The socket stays open (it may recover); last known state is held, not cleared.
+    /// </summary>
+    public bool DcsNotResponding
+    {
+        get => _dcsNotResponding;
+        set
+        {
+            if (_dcsNotResponding == value) return;
+            _dcsNotResponding = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>When the last line of any kind arrived from DCS; null before the first one.
+    /// Deliberately doesn't raise <see cref="Changed"/> (it updates several times a second).</summary>
+    public DateTimeOffset? LastTelemetryUtc { get; set; }
+
     private MissionInfo? _currentMission;
     public MissionInfo? CurrentMission
     {

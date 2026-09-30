@@ -96,6 +96,20 @@ conversion is C#-side only. Any value may be `null`; `failures: null` means DCS 
 data ("Unavailable"), `[]` means none active. Telemetry is throttled to ~5 Hz on model time
 (`TelemetryIntervalSeconds`), but commands are drained every frame.
 
+Besides mission reports, the script sends `{"heartbeat":true}` (~1/s on `Sim.getRealTime()`,
+independent of the telemetry throttle) and `{"paused":true|false}` (from
+`onSimulationPause`/`onSimulationResume`). **Only lines carrying `missionActive` are mission
+reports** — `DcsTelemetryMessage.MissionActive` is `bool?` on purpose, because reading an
+absent field as `false` would clear the mission on every heartbeat. `TryParse` returns a
+`DcsLine` saying which kind it was; any new message type must stay a non-mission-report too.
+
+`DcsConnection`'s watchdog sets `BridgeStatus.DcsNotResponding` when a connected, mid-mission,
+unpaused DCS sends nothing for `DefaultNotRespondingTimeout` (5 s) — a hung DCS, which unlike a
+killed one keeps its socket open. It never closes the socket (maintainer decision: keep
+waiting); any line clears it. A freeze in the DCS menus can't be detected: no Hooks callback
+runs there. Unverified live: whether `onSimulationFrame` keeps firing while paused (the
+`paused` line makes it not matter).
+
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
 `CurrentMission`, a garbage line leaves prior state alone; missing fields default to
 "Unknown", and unknown fields are ignored. `terrain` arrives as DCS's internal theatre ID and

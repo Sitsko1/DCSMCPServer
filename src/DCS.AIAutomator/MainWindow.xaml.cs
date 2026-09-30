@@ -119,11 +119,15 @@ public sealed partial class MainWindow : Window
 
     private void RenderDcs()
     {
-        bool connected = _status.DcsConnected;
-        Color color = connected ? NominalColor : IdleColor;
+        // Not responding = connected but DCS has gone silent mid-mission (hung); paused is quiet.
+        var (color, label) =
+            !_status.DcsConnected ? (IdleColor, "DISCONNECTED")
+            : _status.DcsNotResponding ? (WarningColor, "NOT RESPONDING")
+            : _status.DcsPaused ? (IdleColor, "PAUSED")
+            : (NominalColor, "CONNECTED");
 
         DcsLamp.Background = new SolidColorBrush(color);
-        DcsStateText.Text = connected ? "CONNECTED" : "DISCONNECTED";
+        DcsStateText.Text = label;
         DcsStateText.Foreground = new SolidColorBrush(color);
         DcsAddressText.Text = _status.DcsEndpoint;
     }
@@ -150,6 +154,17 @@ public sealed partial class MainWindow : Window
         NoAircraftText.Visibility = a is null ? Visibility.Visible : Visibility.Collapsed;
         AircraftDetailPanel.Visibility = a is null ? Visibility.Collapsed : Visibility.Visible;
         if (a is null) return;
+
+        // Values stop updating while paused or hung; say so rather than look live.
+        bool held = _status.DcsNotResponding || _status.DcsPaused;
+        AircraftHeldText.Visibility = held ? Visibility.Visible : Visibility.Collapsed;
+        if (held)
+        {
+            AircraftHeldText.Text = _status.DcsNotResponding
+                ? "HELD — DCS NOT RESPONDING, LAST KNOWN VALUES"
+                : "HELD — DCS PAUSED";
+            AircraftHeldText.Foreground = new SolidColorBrush(_status.DcsNotResponding ? WarningColor : IdleColor);
+        }
 
         // Same formatter as the get_aircraft_state MCP tool, so the panel and the LLM always agree.
         UnitSystem u = _status.Units;

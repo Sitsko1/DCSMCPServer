@@ -16,16 +16,30 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     private readonly BridgeStatus _status;
     private readonly string _dcsIp;
     private readonly int _dcsPort;
+    private readonly TimeSpan _notRespondingTimeout;
 
     private TcpClient? _client;
     private NetworkStream? _stream;
+    private long _lastLineTicks = Environment.TickCount64; // written by the read loop, read by the watchdog
 
-    public DcsConnection(ILogger<DcsConnection> logger, BridgeStatus status, string dcsIp = "127.0.0.1", int dcsPort = 1024)
+    /// <summary>
+    /// How long a connected, mid-mission, unpaused DCS may stay silent before it's reported as
+    /// not responding. The Hooks script heartbeats ~1/s, so this tolerates a few missed beats.
+    /// </summary>
+    public static readonly TimeSpan DefaultNotRespondingTimeout = TimeSpan.FromSeconds(5);
+
+    public DcsConnection(
+        ILogger<DcsConnection> logger,
+        BridgeStatus status,
+        string dcsIp = "127.0.0.1",
+        int dcsPort = 1024,
+        TimeSpan? notRespondingTimeout = null)
     {
         _logger = logger;
         _status = status;
         _dcsIp = dcsIp;
         _dcsPort = dcsPort;
+        _notRespondingTimeout = notRespondingTimeout ?? DefaultNotRespondingTimeout;
     }
 
     /// <summary>
@@ -50,6 +64,13 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Task watchdog = RunNotRespondingWatchdogAsync(stoppingToken);
+        await RunConnectionLoopAsync(stoppingToken);
+        await watchdog;
+    }
+
+    private async Task RunConnectionLoopAsync(CancellationToken stoppingToken)
+    {
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -59,6 +80,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                     _client = new TcpClient();
                     await _client.ConnectAsync(_dcsIp, _dcsPort, stoppingToken);
                     _stream = _client.GetStream();
+                    Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
                     _status.DcsConnected = true;
                     _logger.LogDebug("Connected to DCS socket.");
                 }
@@ -66,10 +88,22 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                 using var reader = new StreamReader(_stream, Encoding.UTF8, leaveOpen: true);
                 while (!stoppingToken.IsCancellationRequested && await reader.ReadLineAsync(stoppingToken) is string line)
                 {
-                    if (DcsTelemetryParser.TryParse(line, out MissionInfo? mission, out AircraftState? aircraft))
+                    // Any line at all — even one we can't parse — proves DCS is alive.
+                    Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
+                    _status.LastTelemetryUtc = DateTimeOffset.UtcNow;
+                    _status.DcsNotResponding = false;
+
+                    if (DcsTelemetryParser.TryParse(line, out DcsLine? parsed))
                     {
-                        _status.CurrentMission = mission;
-                        _status.Aircraft = aircraft;
+                        // Only mission reports touch mission/aircraft; heartbeat and pause lines
+                        // would otherwise wipe them.
+                        if (parsed.IsMissionReport)
+                        {
+                            _status.CurrentMission = parsed.Mission;
+                            _status.Aircraft = parsed.Aircraft;
+                            if (parsed.Mission is null) _status.DcsPaused = false; // mission over
+                        }
+                        if (parsed.Paused is bool paused) _status.DcsPaused = paused;
                     }
                 }
 
@@ -98,8 +132,38 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _client = null;
         _stream = null;
         _status.DcsConnected = false;
+        _status.DcsPaused = false;
+        _status.DcsNotResponding = false;
         _status.CurrentMission = null;
         _status.Aircraft = null;
+    }
+
+    /// <summary>
+    /// Flags a hung DCS: heartbeats are expected only while connected, mid-mission and unpaused
+    /// (DCS runs no Hooks callbacks in the menus, and model-time telemetry stops while paused).
+    /// Never closes the socket — a hang may recover, and the next line clears the flag.
+    /// </summary>
+    private async Task RunNotRespondingWatchdogAsync(CancellationToken stoppingToken)
+    {
+        var interval = TimeSpan.FromMilliseconds(Math.Clamp(_notRespondingTimeout.TotalMilliseconds / 4, 10, 250));
+        using var timer = new PeriodicTimer(interval);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                bool expected = _status.DcsConnected && _status.CurrentMission is not null && !_status.DcsPaused;
+                long silentMs = Environment.TickCount64 - Interlocked.Read(ref _lastLineTicks);
+                if (expected && silentMs >= _notRespondingTimeout.TotalMilliseconds && !_status.DcsNotResponding)
+                {
+                    _status.DcsNotResponding = true;
+                    _logger.LogWarning("DCS not responding: no data for {Seconds:0.0} s mid-mission.", silentMs / 1000.0);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // shutting down
+        }
     }
 
     public override void Dispose()

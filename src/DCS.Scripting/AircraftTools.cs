@@ -32,8 +32,24 @@ public class AircraftTools
                    "is not in an aircraft (spectating or dead).";
         }
 
+        // Never pass held data off as live.
+        string? caveat = null;
+        if (_status.DcsNotResponding)
+        {
+            int ageSeconds = _status.LastTelemetryUtc is { } last
+                ? (int)(DateTimeOffset.UtcNow - last).TotalSeconds
+                : -1;
+            caveat = ageSeconds >= 0
+                ? $"DCS not responding; last update {ageSeconds} s ago. The values below are stale (last known)."
+                : "DCS not responding. The values below are stale (last known).";
+        }
+        else if (_status.DcsPaused)
+        {
+            caveat = "DCS is paused; the values below are held from when it paused.";
+        }
+
         UnitSystem u = _status.Units;
-        return string.Join('\n',
+        string state = string.Join('\n',
             $"Aircraft: {mission.Aircraft}",
             $"Position: {AircraftStateFormatter.Position(a.Latitude, a.Longitude)}",
             $"Altitude: {AircraftStateFormatter.Altitude(a.AltitudeMslMeters, u)} MSL, {AircraftStateFormatter.Altitude(a.AltitudeAglMeters, u)} AGL",
@@ -44,5 +60,6 @@ public class AircraftTools
             $"Magnetic heading: {AircraftStateFormatter.Heading(a.MagneticHeadingRadians)}",
             $"Malfunctions: {AircraftStateFormatter.Failures(a.Failures)}",
             $"Units: {(u == UnitSystem.Imperial ? "imperial (ft, kt, ft/min)" : "metric (m, km/h, m/s)")}");
+        return caveat is null ? state : caveat + "\n" + state;
     }
 }
