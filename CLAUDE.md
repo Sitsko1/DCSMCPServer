@@ -109,8 +109,12 @@ absent field as `false` would clear the mission on every heartbeat. `TryParse` r
 unpaused DCS sends nothing for `DefaultNotRespondingTimeout` (5 s) — a hung DCS, which unlike a
 killed one keeps its socket open. It never closes the socket (maintainer decision: keep
 waiting); any line clears it. A freeze in the DCS menus can't be detected: no Hooks callback
-runs there. Unverified live: whether `onSimulationFrame` keeps firing while paused (the
-`paused` line makes it not matter).
+runs there. Verified live: normal pause (Esc) shows PAUSED; killing DCS shows DISCONNECTED and a
+restarted DCS reconnects. **Active Pause is not reported** — DCS fires no
+`onSimulationPause` for it (the rest of the sim keeps running), so the app stays CONNECTED; that's
+a DCS limitation, not a bug. Suspending `DCS.exe` (Resource Monitor) shows NOT RESPONDING, and
+resuming it returns to CONNECTED. Unverified live: whether `onSimulationFrame` keeps firing while
+paused (the `paused` line makes it not matter).
 
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
 `CurrentMission`, a garbage line leaves prior state alone; missing fields default to
