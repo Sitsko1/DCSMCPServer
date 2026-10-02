@@ -80,6 +80,17 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_ReportsFailureFlagsOnlyForFc3Aircraft()
+    {
+        // LoGetMCPState only reflects the simplified FC3 flight models. Verified live: an F/A-18C
+        // with several triggered failures (engine, MC 2, generator, …) reports none of them.
+        Assert.Contains("[\"F-15C\"] = true", Lua);
+        Assert.Contains("[\"Su-27\"] = true", Lua);
+        Assert.DoesNotContain("[\"FA-18C_hornet\"]", Lua); // full-fidelity: not an FC3 list entry
+        Assert.Contains("mcpBridgeFc3Types[typeName]", Lua);
+    }
+
+    [Fact]
     public void Generate_ThrottlesTelemetry_ButDrainsCommandsEveryFrame()
     {
         Assert.Contains("TELEMETRY_INTERVAL = 0.2", Lua); // invariant culture, never "0,2"

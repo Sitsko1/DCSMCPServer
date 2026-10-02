@@ -144,8 +144,18 @@ public static class LuaHooksScriptGenerator
             "MFDFailure", "HUDFailure", "HelmetFailure", "FuelTankDamage",
         }
 
-        -- JSON array of active failure flags, or null when DCS gives no failure data.
-        local function mcpBridgeFailuresJson()
+        -- LoGetMCPState only reflects the simplified FC3 flight models. Full-fidelity modules don't
+        -- set these flags (verified live: an F/A-18C with engine/MC/generator failures reported
+        -- none), so for them failures are "not reported" (null), never a false "none" ([]).
+        local mcpBridgeFc3Types = {
+            ["A-10A"] = true, ["F-15C"] = true, ["J-11A"] = true, ["MiG-29A"] = true,
+            ["MiG-29G"] = true, ["MiG-29S"] = true, ["Su-25"] = true, ["Su-25T"] = true,
+            ["Su-27"] = true, ["Su-33"] = true,
+        }
+
+        -- JSON array of active failure flags, or null when this aircraft doesn't report them.
+        local function mcpBridgeFailuresJson(typeName)
+            if not mcpBridgeFc3Types[typeName] then return "null" end
             local state = mcpBridgeCall(function() return Export.LoGetMCPState() end)
             if type(state) ~= "table" then return "null" end
             local active = {}
@@ -171,7 +181,7 @@ public static class LuaHooksScriptGenerator
                 mcpBridgeNum(mcpBridgeCall(function() return Export.LoGetMachNumber() end), "%.3f"),
                 mcpBridgeNum(mcpBridgeCall(function() return Export.LoGetVerticalVelocity() end), "%.2f"),
                 mcpBridgeNum(mcpBridgeCall(function() return Export.LoGetMagneticYaw() end), "%.4f"),
-                mcpBridgeFailuresJson())
+                mcpBridgeFailuresJson(self_.Name))
         end
 
         -- "ownship" is omitted when there's no player aircraft (spectator, dead).
