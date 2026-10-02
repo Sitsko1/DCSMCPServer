@@ -92,8 +92,10 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 ```
 
 `ownship` is sent only when there's a player aircraft, in DCS's SI units (m, m/s, rad) —
-conversion is C#-side only. Any value may be `null`; `failures: null` means DCS gave no failure
-data ("Unavailable"), `[]` means none active. Telemetry is throttled to ~5 Hz on model time
+conversion is C#-side only. Any value may be `null`; `failures: null` means this aircraft
+doesn't report failures ("Not reported by this aircraft"), `[]` means none active. Failures come
+from `LoGetMCPState`, which only the simplified **FC3** aircraft set — full-fidelity modules don't
+(verified live on the F/A-18C), so the script sends `null` for any type not in its FC3 list. Telemetry is throttled to ~5 Hz on model time
 (`TelemetryIntervalSeconds`), but commands are drained every frame.
 
 Besides mission reports, the script sends `{"heartbeat":true}` (~1/s on `Sim.getRealTime()`,
