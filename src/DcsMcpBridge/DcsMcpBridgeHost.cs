@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using DCS.Scripting;
 using Microsoft.AspNetCore.Builder;
@@ -5,7 +6,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using ModelContextProtocol;
+using ModelContextProtocol.Protocol;
+using ModelContextProtocol.Server;
 
 /// <summary>
 /// Composes and runs the MCP server (HTTP transport) plus the DCS connection, in-process, for
@@ -32,16 +36,28 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
         string listenUrl = "http://127.0.0.1:5270",
         string dcsIp = "127.0.0.1",
         int dcsPort = 1024,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ILoggerProvider? loggerProvider = null)
     {
         Status.BridgeState = BridgeState.Starting;
         try
         {
             var builder = WebApplication.CreateBuilder();
 
-            // No console attached when hosted inside a WinUI app; log to the debug output instead.
+            // Never a console provider: a WinUI app has no console attached. With a provider (the
+            // app's DcsLogging), it decides the level; without one (tests), debug output only.
             builder.Logging.ClearProviders();
-            builder.Logging.AddDebug();
+            if (loggerProvider is not null)
+            {
+                builder.Logging.AddProvider(loggerProvider); // registered as an instance, so a host restart doesn't dispose it
+                builder.Logging.SetMinimumLevel(LogLevel.Trace);
+                builder.Logging.AddFilter("Microsoft", LogLevel.Warning); // per-request ASP.NET chatter
+                builder.Logging.AddFilter("ModelContextProtocol", LogLevel.Warning);
+            }
+            else
+            {
+                builder.Logging.AddDebug();
+            }
 
             builder.Services.AddDcsScripting(Status, dcsIp, dcsPort);
 
@@ -56,7 +72,8 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
                 .AddMcpServer()
                 .WithHttpTransport(o => o.Stateless = true)
                 .WithTools<AtcTools>(atcToolSerializerOptions)
-                .WithTools<AircraftTools>();
+                .WithTools<AircraftTools>()
+                .WithRequestFilters(filters => filters.AddCallToolFilter(LogToolCall));
 
             builder.WebHost.UseUrls(listenUrl);
 
@@ -67,6 +84,8 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             Status.McpEndpoint = $"{listenUrl.TrimEnd('/')}/mcp";
             Status.DcsEndpoint = $"{dcsIp}:{dcsPort}";
             Status.BridgeState = BridgeState.Running;
+            _app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DCS.Bridge").LogInformation(
+                "MCP server listening at {McpEndpoint}; DCS at {DcsEndpoint}", Status.McpEndpoint, Status.DcsEndpoint);
         }
         catch
         {
@@ -74,6 +93,30 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Logs every MCP tool call: name, outcome and duration. Never the arguments — they're
+    /// user/LLM free text, some of it ending up as Lua sent to DCS (see #4).
+    /// </summary>
+    private static McpRequestHandler<CallToolRequestParams, CallToolResult> LogToolCall(
+        McpRequestHandler<CallToolRequestParams, CallToolResult> next) => async (context, cancellationToken) =>
+    {
+        ILogger logger = context.Services?.GetService<ILoggerFactory>()?.CreateLogger("DCS.Tools") ?? NullLogger.Instance;
+        string tool = context.Params?.Name ?? "(unknown)";
+        long started = Stopwatch.GetTimestamp();
+        try
+        {
+            CallToolResult result = await next(context, cancellationToken);
+            logger.LogInformation("Tool {Tool} {Outcome} in {ElapsedMs:0} ms",
+                tool, result.IsError == true ? "failed" : "succeeded", Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Tool {Tool} threw after {ElapsedMs:0} ms", tool, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+            throw;
+        }
+    };
 
     // Stops and fully tears down the current WebApplication so StartAsync can be called again
     // (e.g. after a settings change) without leaking the previous instance.

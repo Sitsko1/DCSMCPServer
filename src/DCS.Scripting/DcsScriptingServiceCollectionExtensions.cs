@@ -27,7 +27,8 @@ public static class DcsScriptingServiceCollectionExtensions
             sp.GetRequiredService<ILogger<DcsConnection>>(),
             sp.GetRequiredService<BridgeStatus>(),
             dcsIp,
-            dcsPort));
+            dcsPort,
+            dcsScriptLogger: sp.GetRequiredService<ILoggerFactory>().CreateLogger("DCS")));
         services.AddSingleton<IDcsConnection>(sp => sp.GetRequiredService<DcsConnection>());
         services.AddHostedService(sp => sp.GetRequiredService<DcsConnection>());
         return services;

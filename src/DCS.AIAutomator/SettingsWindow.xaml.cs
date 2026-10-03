@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using DCS.Scripting;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
@@ -17,14 +19,17 @@ public sealed partial class SettingsWindow : Window
     private readonly SettingsService _settings;
     private readonly Func<bool, Task> _applySettingsAsync;
     private readonly NotificationService _notifications;
+    private readonly ILogger _log;
+    private static readonly LogLevel[] LogLevels = [LogLevel.Warning, LogLevel.Information, LogLevel.Debug];
 
     /// <param name="applySettingsAsync">Applies saved settings; the argument says whether the
     /// bridge must restart (only when a connection setting changed).</param>
-    public SettingsWindow(SettingsService settings, Func<bool, Task> applySettingsAsync, NotificationService notifications)
+    public SettingsWindow(SettingsService settings, Func<bool, Task> applySettingsAsync, NotificationService notifications, ILogger log)
     {
         InitializeComponent();
         _settings = settings;
         _applySettingsAsync = applySettingsAsync;
+        _log = log;
         _notifications = notifications;
 
         AppWindow.Resize(new Windows.Graphics.SizeInt32(560, 560));
@@ -36,6 +41,9 @@ public sealed partial class SettingsWindow : Window
         SavedGamesPathBox.Text = _settings.DcsSavedGamesPath;
         ToastDurationBox.Value = _settings.ToastDurationSeconds;
         UnitsBox.SelectedIndex = _settings.Units == UnitSystem.Metric ? 1 : 0;
+        LogLevelBox.SelectedIndex = Math.Max(0, Array.IndexOf(LogLevels, _settings.LogLevel));
+        LogRetentionBox.Value = _settings.LogRetentionDays;
+        LogFolderText.Text = ((App)Application.Current).LogDirectory;
     }
 
     private void OnSectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -46,6 +54,7 @@ public sealed partial class SettingsWindow : Window
         IntegrationPanel.Visibility = tag == "Integration" ? Visibility.Visible : Visibility.Collapsed;
         NotificationsPanel.Visibility = tag == "Notifications" ? Visibility.Visible : Visibility.Collapsed;
         DisplayPanel.Visibility = tag == "Display" ? Visibility.Visible : Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = tag == "Diagnostics" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void OnBrowseInstallPathClicked(object sender, RoutedEventArgs e)
@@ -114,12 +123,18 @@ public sealed partial class SettingsWindow : Window
     private void OnDeployClicked(object sender, RoutedEventArgs e)
     {
         var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
+        if (result.Success)
+            _log.LogInformation("Lua scripts deployed: {DeployResult}", result.Message);
+        else
+            _log.LogError("Lua deploy failed: {DeployResult}", result.Message);
         DeployStatusText.Text = result.Success ? result.Message : $"Failed: {result.Message}";
         _notifications.Show(
             result.Success ? "Lua scripts deployed" : "Lua deploy failed",
             result.Message,
             result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
     }
+
+    private void OnOpenLogFolderClicked(object sender, RoutedEventArgs e) => ((App)Application.Current).OpenLogFolder();
 
     // Nothing is persisted until Save, so discarding staged edits is just closing; App drops its
     // reference on Closed and the next open reloads from SettingsService.
@@ -141,13 +156,31 @@ public sealed partial class SettingsWindow : Window
             || _settings.DcsHost != DcsHostBox.Text
             || _settings.DcsPort != (int)DcsPortBox.Value;
 
+        LogLevel newLogLevel = LogLevels[Math.Max(0, LogLevelBox.SelectedIndex)];
+        UnitSystem newUnits = UnitsBox.SelectedIndex == 1 ? UnitSystem.Metric : UnitSystem.Imperial;
+
+        // Names only, never values: keeps the log free of anything a setting might hold.
+        var changed = new List<string>();
+        if (_settings.McpPort != (int)McpPortBox.Value) changed.Add(nameof(SettingsService.McpPort));
+        if (_settings.DcsHost != DcsHostBox.Text) changed.Add(nameof(SettingsService.DcsHost));
+        if (_settings.DcsPort != (int)DcsPortBox.Value) changed.Add(nameof(SettingsService.DcsPort));
+        if (_settings.DcsInstallPath != InstallPathBox.Text) changed.Add(nameof(SettingsService.DcsInstallPath));
+        if (_settings.DcsSavedGamesPath != SavedGamesPathBox.Text) changed.Add(nameof(SettingsService.DcsSavedGamesPath));
+        if (_settings.ToastDurationSeconds != (int)ToastDurationBox.Value) changed.Add(nameof(SettingsService.ToastDurationSeconds));
+        if (_settings.Units != newUnits) changed.Add(nameof(SettingsService.Units));
+        if (_settings.LogLevel != newLogLevel) changed.Add(nameof(SettingsService.LogLevel));
+        if (_settings.LogRetentionDays != (int)LogRetentionBox.Value) changed.Add(nameof(SettingsService.LogRetentionDays));
+
         _settings.McpPort = (int)McpPortBox.Value;
         _settings.DcsHost = DcsHostBox.Text;
         _settings.DcsPort = (int)DcsPortBox.Value;
         _settings.DcsInstallPath = InstallPathBox.Text;
         _settings.DcsSavedGamesPath = SavedGamesPathBox.Text;
         _settings.ToastDurationSeconds = (int)ToastDurationBox.Value;
-        _settings.Units = UnitsBox.SelectedIndex == 1 ? UnitSystem.Metric : UnitSystem.Imperial;
+        _settings.Units = newUnits;
+        _settings.LogLevel = newLogLevel;
+        _settings.LogRetentionDays = (int)LogRetentionBox.Value;
+        _log.LogInformation("Settings saved; changed: {ChangedSettings}", changed.Count == 0 ? "none" : string.Join(", ", changed));
 
         if (connectionChanged) SaveStatusText.Text = "Restarting bridge…";
         try

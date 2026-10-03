@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DCS.Scripting;
 
 namespace DCS.AIAutomator;
@@ -20,6 +21,11 @@ public sealed class BridgeStatusNotifier
     private bool _lastDcsNotResponding;
     private string? _lastMissionName;
 
+    // DCS script errors are already rate-limited per message in Lua (10 s); this caps toasts
+    // further so a burst of different errors can't flood the screen.
+    private static readonly TimeSpan ScriptErrorToastInterval = TimeSpan.FromSeconds(60);
+    private readonly Dictionary<string, DateTimeOffset> _lastScriptErrorToast = new();
+
     public BridgeStatusNotifier(BridgeStatus status, NotificationService notifications)
     {
         _status = status;
@@ -31,6 +37,20 @@ public sealed class BridgeStatusNotifier
         _lastMissionName = status.CurrentMission?.MissionName;
 
         status.Changed += OnStatusChanged;
+        status.DcsScriptError += OnDcsScriptError;
+    }
+
+    // Raised on DcsConnection's background thread; NotificationService.Show marshals to the UI.
+    private void OnDcsScriptError(object? sender, string message)
+    {
+        lock (_lastScriptErrorToast)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (_lastScriptErrorToast.TryGetValue(message, out DateTimeOffset last) && now - last < ScriptErrorToastInterval) return;
+            if (_lastScriptErrorToast.Count > 100) _lastScriptErrorToast.Clear();
+            _lastScriptErrorToast[message] = now;
+        }
+        _notifications.Show("DCS script error", message, NotificationSeverity.Error);
     }
 
     private void OnStatusChanged(object? sender, EventArgs e)
@@ -47,7 +67,7 @@ public sealed class BridgeStatusNotifier
                     _notifications.Show("Bridge running", $"MCP server listening at {_status.McpEndpoint}", NotificationSeverity.Success);
                     break;
                 case BridgeState.Faulted:
-                    _notifications.Show("Bridge faulted", "The MCP server failed to start.", NotificationSeverity.Error);
+                    _notifications.Show("Bridge faulted", "The MCP server failed to start. The log has the reason.", NotificationSeverity.Error);
                     break;
                 case BridgeState.Stopped:
                     _notifications.Show("Bridge stopped", "The MCP server has stopped.", NotificationSeverity.Info);

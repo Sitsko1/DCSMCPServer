@@ -19,6 +19,9 @@ public sealed class NotificationService
         _dispatcherQueue = dispatcherQueue;
     }
 
+    /// <summary>Opens the app's log; error toasts offer it as a "View log" action when set.</summary>
+    public Action? ViewLog { get; init; }
+
     /// <summary>All notifications raised so far, newest first. Bind this to the history view.</summary>
     public ObservableCollection<Notification> History { get; } = new();
 

@@ -13,6 +13,7 @@ namespace DCS.Scripting;
 public sealed class DcsConnection : BackgroundService, IDcsConnection
 {
     private readonly ILogger<DcsConnection> _logger;
+    private readonly ILogger _dcsScriptLogger; // the Hooks script's own forwarded messages ("DCS" source context)
     private readonly BridgeStatus _status;
     private readonly string _dcsIp;
     private readonly int _dcsPort;
@@ -33,9 +34,11 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         BridgeStatus status,
         string dcsIp = "127.0.0.1",
         int dcsPort = 1024,
-        TimeSpan? notRespondingTimeout = null)
+        TimeSpan? notRespondingTimeout = null,
+        ILogger? dcsScriptLogger = null)
     {
         _logger = logger;
+        _dcsScriptLogger = dcsScriptLogger ?? logger;
         _status = status;
         _dcsIp = dcsIp;
         _dcsPort = dcsPort;
@@ -82,7 +85,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                     _stream = _client.GetStream();
                     Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
                     _status.DcsConnected = true;
-                    _logger.LogDebug("Connected to DCS socket.");
+                    _logger.LogInformation("Connected to DCS at {DcsHost}:{DcsPort}", _dcsIp, _dcsPort);
                 }
 
                 using var reader = new StreamReader(_stream, Encoding.UTF8, leaveOpen: true);
@@ -104,6 +107,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                             if (parsed.Mission is null) _status.DcsPaused = false; // mission over
                         }
                         if (parsed.Paused is bool paused) _status.DcsPaused = paused;
+                        if (parsed.Log is { } entry) ForwardScriptLog(entry);
                     }
                 }
 
@@ -118,8 +122,17 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
             }
             catch (Exception ex)
             {
+                // Warn once when an established connection drops; the every-3-s retries while DCS
+                // isn't running at all would otherwise flood the log, so those are Debug only.
+                if (_status.DcsConnected)
+                {
+                    _logger.LogWarning("DCS connection lost ({Reason}); retrying every 3 s", ex.Message);
+                }
+                else
+                {
+                    _logger.LogDebug("DCS not reachable ({Reason}); retrying in 3 s", ex.Message);
+                }
                 CleanConnection();
-                _logger.LogWarning("DCS connection disrupted. Retrying in 3 seconds... Details: {Message}", ex.Message);
                 try { await Task.Delay(3000, stoppingToken); } catch (TaskCanceledException) { break; }
             }
         }
@@ -136,6 +149,19 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _status.DcsNotResponding = false;
         _status.CurrentMission = null;
         _status.Aircraft = null;
+    }
+
+    private void ForwardScriptLog(DcsLogEntry entry)
+    {
+        LogLevel level = entry.Level.ToLowerInvariant() switch
+        {
+            "error" => LogLevel.Error,
+            "warning" or "warn" => LogLevel.Warning,
+            "debug" => LogLevel.Debug,
+            _ => LogLevel.Information,
+        };
+        _dcsScriptLogger.Log(level, "DCS script: {DcsMessage}", entry.Message);
+        if (entry.IsError) _status.RaiseDcsScriptError(entry.Message);
     }
 
     /// <summary>

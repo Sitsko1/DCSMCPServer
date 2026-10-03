@@ -24,6 +24,7 @@
                 <NavigationViewItem Content="DCS Integration" Tag="Integration" />
                 <NavigationViewItem Content="Notifications" Tag="Notifications" />
                 <NavigationViewItem Content="Display" Tag="Display" />
+                <NavigationViewItem Content="Diagnostics" Tag="Diagnostics" />
             </NavigationView.MenuItems>
         </NavigationView>
 
@@ -166,6 +167,50 @@
                                 <ComboBoxItem Content="Metric (m, km/h)" Tag="Metric" />
                             </ComboBox>
                         </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Diagnostics -->
+                <StackPanel x:Name="DiagnosticsPanel" Spacing="12" Visibility="Collapsed">
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="140" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Log level" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="How much detail goes into the log file. Debug is for troubleshooting. Applies immediately on Save." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                            </StackPanel>
+                            <ComboBox x:Name="LogLevelBox" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                <ComboBoxItem Content="Warning" />
+                                <ComboBoxItem Content="Information" />
+                                <ComboBoxItem Content="Debug" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="140" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Keep logs for (days)" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="Older log files are deleted automatically. Takes effect the next time the app starts." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                            </StackPanel>
+                            <NumberBox x:Name="LogRetentionBox" Grid.Column="1" Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <StackPanel Spacing="8">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Log files" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="Structured JSON lines (one event per line), one file per day. Never contains API keys, secrets or the Lua sent to DCS." Style="{StaticResource SettingsCardDescriptionStyle}" />
+                                <TextBlock x:Name="LogFolderText" Style="{StaticResource SubtleMonoStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Content="Open log folder" Click="OnOpenLogFolderClicked" HorizontalAlignment="Left" />
+                        </StackPanel>
                     </Border>
                 </StackPanel>
 

@@ -32,10 +32,47 @@ public static class LuaHooksScriptGenerator
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
             missionName = "Unknown", terrain = "Unknown", displayNames = {}, lastSent = -1, lastHeartbeat = -1,
+            logBuffer = {}, logLastSent = {}, logLastSentCount = 0,
         }
+        local LOG_REPEAT_INTERVAL = 10 -- seconds: the same log message is forwarded to the app at most this often
+        local LOG_BUFFER_SIZE = 10 -- log messages held while no app is connected, sent once it connects
 
-        local function mcpBridgeLog(msg)
-            if log then log.write("DCSMcpBridge", log.INFO, tostring(msg)) end
+        -- JSON string escaping, including control characters (Lua error text can carry tabs/newlines).
+        local function mcpBridgeJsonEscape(s)
+            return (tostring(s):gsub('[\\"]', '\\%0'):gsub('%c', function(c) return string.format('\\u%04x', c:byte()) end))
+        end
+
+        -- Writes to dcs.log and forwards to the app's log ({"log":...}); errors also become an app
+        -- notification. Repeats of a message (e.g. a per-frame error) are rate-limited.
+        local function mcpBridgeLog(level, msg)
+            msg = tostring(msg)
+            if log then log.write("DCSMcpBridge", level == "error" and log.ERROR or log.INFO, msg) end
+
+            local okNow, now = pcall(function() return Sim.getRealTime() end)
+            if okNow and type(now) == "number" then
+                local last = McpBridge.logLastSent[msg]
+                if last and now - last < LOG_REPEAT_INTERVAL then return end
+                if McpBridge.logLastSentCount > 200 then McpBridge.logLastSent, McpBridge.logLastSentCount = {}, 0 end
+                if last == nil then McpBridge.logLastSentCount = McpBridge.logLastSentCount + 1 end
+                McpBridge.logLastSent[msg] = now
+            end
+
+            -- (final brace appended separately: two adjacent closing braces would end an
+            -- interpolation hole in the C# $$ raw string this script is generated from)
+            local line = string.format('{"log":{"level":"%s","message":"%s"}', level, mcpBridgeJsonEscape(msg)) .. "}"
+            if McpBridge.client then
+                pcall(function() McpBridge.client:send(line .. "\n") end)
+            else
+                table.insert(McpBridge.logBuffer, line)
+                if #McpBridge.logBuffer > LOG_BUFFER_SIZE then table.remove(McpBridge.logBuffer, 1) end
+            end
+        end
+
+        local function mcpBridgeFlushLogBuffer()
+            for _, line in ipairs(McpBridge.logBuffer) do
+                pcall(function() McpBridge.client:send(line .. "\n") end)
+            end
+            McpBridge.logBuffer = {}
         end
 
         local function mcpBridgeEnsureSocket()
@@ -46,12 +83,12 @@ public static class LuaHooksScriptGenerator
                     return require("socket")
                 end)
                 if not ok then
-                    mcpBridgeLog("failed to load LuaSocket: " .. tostring(socketLib))
+                    mcpBridgeLog("error", "failed to load LuaSocket: " .. tostring(socketLib))
                     return
                 end
                 local server, err = socketLib.bind(McpBridge.host, McpBridge.port)
                 if not server then
-                    mcpBridgeLog("failed to bind " .. McpBridge.host .. ":" .. McpBridge.port .. " - " .. tostring(err))
+                    mcpBridgeLog("error", "failed to bind " .. McpBridge.host .. ":" .. McpBridge.port .. " - " .. tostring(err))
                     return
                 end
                 server:settimeout(0)
@@ -64,6 +101,7 @@ public static class LuaHooksScriptGenerator
                     client:settimeout(0)
                     client:setoption("tcp-nodelay", true)
                     McpBridge.client = client
+                    mcpBridgeFlushLogBuffer()
                 end
             end
         end
@@ -85,9 +123,9 @@ public static class LuaHooksScriptGenerator
                     local fn, compileErr = loadstring(line)
                     if fn then
                         local ok, runErr = pcall(fn)
-                        if not ok then mcpBridgeLog("command error: " .. tostring(runErr)) end
+                        if not ok then mcpBridgeLog("error", "command error: " .. tostring(runErr)) end
                     else
-                        mcpBridgeLog("command parse error: " .. tostring(compileErr))
+                        mcpBridgeLog("error", "command parse error: " .. tostring(compileErr))
                     end
                 elseif err == "closed" then
                     McpBridge.client = nil
@@ -96,10 +134,6 @@ public static class LuaHooksScriptGenerator
                     break -- "timeout": no more data queued this frame
                 end
             end
-        end
-
-        local function mcpBridgeJsonEscape(s)
-            return (tostring(s):gsub('[\\"]', '\\%0'):gsub('\n', '\\n'))
         end
 
         -- Mission name and map don't change during a mission, so read them once at start.
@@ -219,7 +253,7 @@ public static class LuaHooksScriptGenerator
         function mcpBridgeCallbacks.onSimulationStart()
             McpBridge.lastSent, McpBridge.lastHeartbeat = -1, -1
             local ok, err = pcall(mcpBridgeCacheMission)
-            if not ok then mcpBridgeLog("start error: " .. tostring(err)) end
+            if not ok then mcpBridgeLog("error", "start error: " .. tostring(err)) end
         end
 
         function mcpBridgeCallbacks.onSimulationFrame()
@@ -235,7 +269,7 @@ public static class LuaHooksScriptGenerator
                     mcpBridgeSendLine(mcpBridgeBuildTelemetry())
                 end
             end)
-            if not ok then mcpBridgeLog("frame error: " .. tostring(err)) end
+            if not ok then mcpBridgeLog("error", "frame error: " .. tostring(err)) end
         end
 
         -- The socket stays open between missions (this script lives as long as DCS does); just
@@ -254,6 +288,6 @@ public static class LuaHooksScriptGenerator
         end
 
         Sim.setUserCallbacks(mcpBridgeCallbacks)
-        mcpBridgeLog("hooks loaded, will listen on " .. McpBridge.host .. ":" .. McpBridge.port)
+        mcpBridgeLog("info", "hooks loaded, will listen on " .. McpBridge.host .. ":" .. McpBridge.port)
         """;
 }

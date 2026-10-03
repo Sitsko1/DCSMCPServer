@@ -72,6 +72,14 @@ public sealed partial class ToastHost : UserControl
         textStack.Children.Add(title);
         textStack.Children.Add(message);
 
+        // Errors point at the log, which has the detail a toast can't hold.
+        if (notification.Severity == NotificationSeverity.Error && _service.ViewLog is { } viewLog)
+        {
+            var viewLogLink = new HyperlinkButton { Content = "View log", Padding = new Thickness(0), FontSize = 12 };
+            viewLogLink.Click += (_, _) => viewLog();
+            textStack.Children.Add(viewLogLink);
+        }
+
         var grid = new Grid { ColumnSpacing = 8 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

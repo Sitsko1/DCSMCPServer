@@ -119,6 +119,24 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_ForwardsScriptLogMessagesToTheApp_RateLimitedAndBuffered()
+    {
+        Assert.Contains("log.write(\"DCSMcpBridge\"", Lua);       // still written to dcs.log
+        Assert.Contains("{\"log\":{\"level\":", Lua);            // ...and sent to the app
+        Assert.Contains("LOG_REPEAT_INTERVAL = 10", Lua);        // same message at most once per 10 s
+        Assert.Contains("LOG_BUFFER_SIZE = 10", Lua);            // held until the app connects
+        Assert.Contains("mcpBridgeFlushLogBuffer()", Lua);
+    }
+
+    [Fact]
+    public void Generate_JsonEscapesControlCharacters()
+    {
+        // Lua error messages can contain tabs/newlines; raw control characters make invalid JSON.
+        Assert.Contains("gsub('%c'", Lua);
+        Assert.Contains(@"'\\u%04x'", Lua); // Lua source text: '\\u%04x' → JSON \u00XX
+    }
+
+    [Fact]
     public void Generate_ReportsPauseAndResume()
     {
         Assert.Contains("{\"paused\":true}", FunctionBody("function mcpBridgeCallbacks.onSimulationPause"));

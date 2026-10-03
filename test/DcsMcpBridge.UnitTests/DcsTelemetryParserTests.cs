@@ -23,6 +23,18 @@ public class DcsTelemetryParserTests
         Assert.Null(parsed.Paused);
     }
 
+    [Fact]
+    public void TryParse_LogLine_CarriesTheEntry_AndIsNotAMissionReport()
+    {
+        bool ok = DcsTelemetryParser.TryParse(
+            """{"log":{"level":"error","message":"frame error: attempt to index nil"}}""", out DcsLine? parsed);
+
+        Assert.True(ok);
+        Assert.False(parsed!.IsMissionReport);
+        Assert.Equal("error", parsed.Log!.Level);
+        Assert.Equal("frame error: attempt to index nil", parsed.Log.Message);
+    }
+
     [Theory]
     [InlineData("""{"paused":true}""", true)]
     [InlineData("""{"paused":false}""", false)]

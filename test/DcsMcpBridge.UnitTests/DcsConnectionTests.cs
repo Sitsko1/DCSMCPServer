@@ -98,6 +98,24 @@ public class DcsConnectionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ForwardsDcsScriptErrors_AsStatusEvents_WithoutTouchingTheMission()
+    {
+        var errors = new List<string>();
+        _status.DcsScriptError += (_, message) => { lock (errors) errors.Add(message); };
+
+        using TcpClient dcsSide = await _fakeDcs.AcceptTcpClientAsync();
+        await Send(dcsSide, MissionLine);
+        await WaitUntil(() => _status.CurrentMission is not null);
+        await Send(dcsSide, """{"log":{"level":"info","message":"hooks loaded"}}""");
+        await Send(dcsSide, """{"log":{"level":"error","message":"frame error: boom"}}""");
+
+        await WaitUntil(() => { lock (errors) return errors.Count > 0; });
+        await Task.Delay(100);
+        lock (errors) Assert.Equal(["frame error: boom"], errors); // info-level lines aren't errors
+        Assert.NotNull(_status.CurrentMission);
+    }
+
+    [Fact]
     public async Task Resume_ClearsPaused_AndMissionEnd_ClearsPaused()
     {
         using TcpClient dcsSide = await _fakeDcs.AcceptTcpClientAsync();

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using DCS.Scripting;
+using Microsoft.Extensions.Logging;
 using Windows.Storage;
 
 namespace DCS.AIAutomator;
@@ -59,6 +60,20 @@ public sealed class SettingsService
     {
         get => Enum.TryParse(GetString(nameof(Units), nameof(UnitSystem.Imperial)), out UnitSystem u) ? u : UnitSystem.Imperial;
         set => _values.Values[nameof(Units)] = value.ToString();
+    }
+
+    /// <summary>Minimum level written to the log file: Warning, Information (default) or Debug.</summary>
+    public LogLevel LogLevel
+    {
+        get => Enum.TryParse(GetString(nameof(LogLevel), nameof(LogLevel.Information)), out LogLevel l) ? l : LogLevel.Information;
+        set => _values.Values[nameof(LogLevel)] = value.ToString();
+    }
+
+    /// <summary>Days to keep log files (1–90). Read once at startup.</summary>
+    public int LogRetentionDays
+    {
+        get => Math.Clamp(GetInt(nameof(LogRetentionDays), 7), 1, 90);
+        set => _values.Values[nameof(LogRetentionDays)] = Math.Clamp(value, 1, 90);
     }
 
     public string McpListenUrl => $"http://127.0.0.1:{McpPort}";

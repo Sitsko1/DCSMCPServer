@@ -1,4 +1,5 @@
 using DCS.Scripting;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
@@ -17,13 +18,14 @@ public class McpServerIntegrationTests : IAsyncLifetime
     // running with the deployed script, which made the "DCS is down" test connect to real DCS.
     private const int UnusedDcsPort = 1025;
 
+    private readonly CapturingLoggerProvider _logs = new();
     private DcsMcpBridgeHost _host = null!;
     private McpClient _client = null!;
 
     public async Task InitializeAsync()
     {
         _host = new DcsMcpBridgeHost();
-        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort);
+        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort, loggerProvider: _logs);
 
         var transport = new HttpClientTransport(new HttpClientTransportOptions
         {
@@ -131,6 +133,31 @@ public class McpServerIntegrationTests : IAsyncLifetime
 
         Assert.StartsWith("DCS is paused", text);
         Assert.Contains("F/A-18C", text);
+    }
+
+    [Fact]
+    public async Task ToolCalls_AreLogged_WithNameAndOutcome()
+    {
+        await CallGetAircraftStateAsync();
+
+        Assert.Contains(_logs.Entries, e =>
+            e.Level == LogLevel.Information && e.Message.Contains("get_aircraft_state") && e.Message.Contains("succeeded"));
+    }
+
+    [Fact]
+    public async Task ToolArguments_AreNeverLogged()
+    {
+        // Tool arguments are user/LLM free text that ends up in Lua sent to DCS (see #4) —
+        // they must not land in log files.
+        await _client.CallToolAsync("send_atc_instruction", new Dictionary<string, object?>
+        {
+            ["aircraft_callsign"] = "Sentinel Callsign 9-9",
+            ["action"] = "Vectors",
+            ["heading"] = 90,
+        });
+
+        Assert.Contains(_logs.Entries, e => e.Message.Contains("send_atc_instruction")); // the call itself is logged
+        Assert.DoesNotContain(_logs.Entries, e => e.Message.Contains("Sentinel Callsign"));
     }
 
     private void InjectAircraft()
