@@ -3,7 +3,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DCS.Scripting;
+using DCS.AIAutomator.Core;
+using DCS.AIAutomator.Agents;
 using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml;
@@ -182,7 +183,7 @@ public sealed partial class SettingsWindow : Window
     }
 
     private IReadOnlyList<IAgentIntegration> DetectAgents() =>
-        AgentIntegrations.Detected(CurrentApp, Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "Backups"));
+        AgentIntegrations.Detected(() => CurrentApp.McpUrl, () => CurrentApp.McpApiKey, Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "Backups"));
 
     private async Task RenderAgentsAsync()
     {

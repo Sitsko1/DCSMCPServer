@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DCS.Scripting;
+using DCS.AIAutomator.Core;
 
 namespace DCS.AIAutomator;
 

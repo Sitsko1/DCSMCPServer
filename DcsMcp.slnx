@@ -1,14 +1,15 @@
-<Solution>
+﻿<Solution>
   <Folder Name="/src/">
     <Project Path="src/DCS.AIAutomator/DCS.AIAutomator.csproj" Id="de5e87cf-cde3-4cba-ac0b-590d716efdb1">
       <Platform Project="x64" />
       <Deploy />
     </Project>
-    <Project Path="src/DCS.Scripting/DCS.Scripting.csproj" />
-    <Project Path="src/DcsMcpBridge/DcsMcpBridge.csproj" />
+    <Project Path="src/DCS.AIAutomator.Agents/DCS.AIAutomator.Agents.csproj" />
+    <Project Path="src/DCS.AIAutomator.Core/DCS.AIAutomator.Core.csproj" />
+    <Project Path="src/DCS.AIAutomator.Mcp/DCS.AIAutomator.Mcp.csproj" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test/DcsMcpBridge.IntegrationTests/DcsMcpBridge.IntegrationTests.csproj" />
-    <Project Path="test/DcsMcpBridge.UnitTests/DcsMcpBridge.UnitTests.csproj" />
+    <Project Path="test/DCS.AIAutomator.IntegrationTests/DCS.AIAutomator.IntegrationTests.csproj" />
+    <Project Path="test/DCS.AIAutomator.UnitTests/DCS.AIAutomator.UnitTests.csproj" />
   </Folder>
 </Solution>

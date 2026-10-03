@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using DCS.Scripting;
+using DCS.AIAutomator.Core;
 using Microsoft.Extensions.Logging;
 using Windows.Storage;
 
@@ -10,7 +10,7 @@ namespace DCS.AIAutomator;
 /// <summary>
 /// Reads/writes the app's configurable settings via ApplicationData.LocalSettings (packaged-app
 /// key/value store, tied to this MSIX package's identity). Lives only in this project — never in
-/// DcsMcpBridge, which the integration tests run unpackaged and ApplicationData throws there.
+/// DCS.AIAutomator.Mcp, which the integration tests run unpackaged and ApplicationData throws there.
 /// </summary>
 public sealed class SettingsService
 {
