@@ -1,5 +1,5 @@
 using System;
-using DCS.Scripting;
+using DCS.AIAutomator.Core;
 using Windows.Security.Credentials;
 
 namespace DCS.AIAutomator;

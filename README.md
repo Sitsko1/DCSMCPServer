@@ -61,9 +61,11 @@ see the `dotnet run` gotcha in `CLAUDE.md` if you hit `COMException 0x80040154
 | Path | What it is |
 |---|---|
 | `src/DCS.AIAutomator` | WinUI 3 app — the thing you actually run. Status window + starts the bridge. |
-| `src/DcsMcpBridge` | Class library — the MCP server and DCS connection, hosted in-process by the app above. |
-| `test/DcsMcpBridge.UnitTests` | Tool logic and telemetry parsing, no real DCS/network needed. |
-| `test/DcsMcpBridge.IntegrationTests` | Starts a real bridge in-process and drives it with an MCP client. |
+| `src/DCS.AIAutomator.Core` | Class library — status model, DCS connection, Lua script deployment. |
+| `src/DCS.AIAutomator.Mcp` | Class library — the MCP server (HTTP), its tools, logging, Claude Desktop relay. |
+| `src/DCS.AIAutomator.Agents` | Class library — connecting AI agents (Claude Code, Claude Desktop). |
+| `test/DCS.AIAutomator.UnitTests` | Tool logic, parsing, Lua generation, agent config edits; no real DCS/network needed. |
+| `test/DCS.AIAutomator.IntegrationTests` | Starts a real bridge in-process and drives it with an MCP client. |
 
 Build/test everything with `dotnet build DcsMcp.slnx` / `dotnet test DcsMcp.slnx`.
 

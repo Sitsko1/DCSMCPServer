@@ -1,7 +1,8 @@
 using System;
 using System.IO;
 using System.Threading;
-using DCS.Scripting;
+using DCS.AIAutomator.Core;
+using DCS.AIAutomator.Mcp;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using Windows.Storage;

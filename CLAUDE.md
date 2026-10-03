@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 An MCP (Model Context Protocol) server that lets an LLM control DCS World (the flight
 simulator) through a TCP telemetry/command socket opened by a Lua script it deploys into DCS, plus a WinUI 3 desktop
 app that hosts it and shows live status. `DCS.AIAutomator` is the application users actually
-run; `DcsMcpBridge` and `DCS.Scripting` are libraries it (and tests) load in-process — neither
-has an entry point of its own.
+run; `DCS.AIAutomator.Core`, `.Mcp` and `.Agents` are libraries it (and tests) load in-process —
+none has an entry point of its own.
 
 **HTTP transport, not stdio — don't reintroduce stdio.** Stdio assumes the client spawns the
 server per session, which fights a persistent status window, and MSIX activation doesn't
@@ -29,18 +29,30 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 
 ## Layout
 
-- **`src/DCS.Scripting`** — class library (`IsAotCompatible=true`), everything DCS-specific.
-  Split from `DcsMcpBridge` so the app can call `LuaScriptDeployer` without depending on the
-  MCP host.
+Three libraries plus the app (#17). Every project's namespace matches its name. Dependencies
+point one way:
+
+```
+DCS.AIAutomator (app) ──► DCS.AIAutomator.Agents ──┐
+        │          └────► DCS.AIAutomator.Mcp ─────┼──► DCS.AIAutomator.Core
+        └──────────────────────────────────────────┘
+```
+
+Agents and Mcp never reference each other. **Cross-cutting services:**
+- Libraries depend on `Microsoft.Extensions.*` abstractions only (`ILogger<T>`,
+  `ILoggerProvider`, DI).
+- Concrete providers (Serilog, the Credential Locker, `ApplicationData`) are chosen in the app.
+- Dependency-free shared helpers (`Secrets`) go in Core.
+- Add a separate infrastructure project only once a cross-cutting service needs a dependency Core
+  shouldn't have *and* more than one library uses it.
+
+- **`src/DCS.AIAutomator.Core`** — class library (`IsAotCompatible=true`): the domain and
+  everything DCS-side. It has no MCP SDK dependency.
   - `AddDcsScripting(status, dcsIp, dcsPort)` — the DI wiring: shared `BridgeStatus`
     singleton, `DcsConnection` as both `IDcsConnection` singleton and hosted service.
-  - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
-    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Depends on
-    `IDcsConnection` so tests use `FakeDcsConnection`.
-  - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
-    `BridgeStatus` only (never the connection). Values are formatted by
-    `AircraftStateFormatter`/`UnitConversion`, the **single** formatting path shared with the
-    main window's aircraft panel — don't format units anywhere else, or the two will drift.
+  - `AircraftStateFormatter`/`UnitConversion` — the **single** formatting path, shared by the
+    `get_aircraft_state` tool and the main window's aircraft panel. Don't format units
+    anywhere else, or the two will drift.
   - `DcsConnection` — `BackgroundService` owning the TCP connection to the DCS script (3s
     reconnect loop); sends Lua commands and parses each incoming line as telemetry into
     `BridgeStatus`. **Keep dependencies one-directional (tool → connection, never back).**
@@ -50,12 +62,29 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     same instance survives host restarts (settings change → `StopAsync`/`StartAsync`);
     otherwise a UI subscribed to `Changed` goes stale. It also carries `McpEndpoint`/
     `DcsEndpoint` — render those in UI, never hardcoded literals.
-  - `LuaHooksScriptGenerator` / `LuaScriptDeployer` — generate and deploy the DCS-side
-    script (below). Pure string building / file I/O against a passed-in path.
-- **`src/DcsMcpBridge`** — class library, just the MCP composition root: `DcsMcpBridgeHost`
-  builds a `WebApplication` (`AddDcsScripting`, `WithHttpTransport`, `WithTools<AtcTools>`,
-  `MapMcp("/mcp")`) and exposes `Status`. Owns no DCS logic. Also holds `DcsLogging` (the
-  Serilog pipeline — see Gotchas) and the MCP tool-call logging filter.
+  - `LuaHooksScriptGenerator` / `LuaScriptDeployer` / `DcsPathValidator` — generate and
+    deploy the DCS-side script (below). Pure string building / file I/O against a passed-in
+    path.
+  - `Secrets`, `McpClientActivity` (the AI CLIENTS lamp's state), `MissionInfo`,
+    `AircraftState`.
+- **`src/DCS.AIAutomator.Mcp`** — class library, the MCP server.
+  - `DcsMcpBridgeHost` — the composition root: builds a `WebApplication` (`AddDcsScripting`,
+    `WithHttpTransport`, `WithTools<...>`, `MapMcp("/mcp")`), with the bearer check, the
+    tool-call logging filter and client-activity recording. Exposes `Status`.
+  - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
+    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Depends on
+    `IDcsConnection` so tests use `FakeDcsConnection`.
+  - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
+    `BridgeStatus` only (never the connection).
+  - `McpStdioRelay` — Claude Desktop's stdio ↔ HTTP pipe (#15, below).
+  - `DcsLogging` — the Serilog pipeline (see Gotchas). Only the app uses it; it lives here so
+    tests can reach it.
+- **`src/DCS.AIAutomator.Agents`** — class library: registering this server with AI agents
+  (#15). It has no MCP SDK or Core dependency.
+  - `IAgentIntegration` + one class per agent (`AgentIntegrations.cs`).
+  - `ClaudeCodeRegistration` builds the `claude mcp` arguments; `ClaudeCodeRegistrar` runs them.
+  - `ClaudeDesktopConfig` — edits Claude Desktop's config JSON.
+  - The app passes the URL and key in as `Func<string>`s.
 - **`src/DCS.AIAutomator`** — WinUI 3 app, MSIX-packaged. `App.xaml.cs` creates the
   `DcsMcpBridgeHost` and `NotificationService`, starts the bridge on a background task with
   `SettingsService` values, and owns the current `ElementTheme` (applied to every open
@@ -80,9 +109,15 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     units (held on the shared `BridgeStatus`), applies without a restart.
   - `Themes/ThemeResources.xaml` — brushes (per-theme `ThemeDictionaries`), fonts, shared
     styles; merged into `App.xaml`.
-- **`test/DcsMcpBridge.UnitTests`** — xUnit; tools against `FakeDcsConnection`, parser against
-  raw JSON lines, generator/deployer against generated Lua / temp dirs.
-- **`test/DcsMcpBridge.IntegrationTests`** — starts a real `DcsMcpBridgeHost` in-process on
+  - What stays here:
+    - **UI-thread services:** `NotificationService` and `BridgeStatusNotifier` need
+      `DispatcherQueue`.
+    - **Packaged-only services:** `SettingsService` (`ApplicationData`), `SecretStore`
+      (Credential Locker), and `McpRelayMode`, which uses both.
+- **`test/DCS.AIAutomator.UnitTests`** — xUnit; tools against `FakeDcsConnection`, parser
+  against raw JSON lines, generator/deployer against generated Lua / temp dirs, agent config
+  edits against temp files. The library namespaces are global usings in the csproj.
+- **`test/DCS.AIAutomator.IntegrationTests`** — starts a real `DcsMcpBridgeHost` in-process on
   port **5271** (app default is 5270, so a running dev instance doesn't collide) and drives it
   with the SDK's `McpClient`/`HttpClientTransport`.
 
@@ -184,7 +219,7 @@ for a new agent (OpenAI/Gemini come later); the page needs no change.
     the XAML compiler generates. Running as the packaged app, the relay reads the port from
     `SettingsService` and the key from the Credential Locker (`SecretStore.TryGet`; it never mints
     one). So Claude Desktop's config holds **no URL and no key**, and never needs updating.
-  - **`McpStdioRelay` (in `DcsMcpBridge`) must stay a dumb pipe:** it forwards JSON-RPC between
+  - **`McpStdioRelay` (in `DCS.AIAutomator.Mcp`) must stay a dumb pipe:** it forwards JSON-RPC between
     a stdio transport and `HttpClientTransport` (+ bearer header), hosts no tools and has no DCS
     logic. That's what keeps it from being the deleted stdio-exe bridge. If the app is down or
     rejects the key, each request gets a JSON-RPC error saying so (no hang). stdout carries only
@@ -245,7 +280,7 @@ Saved Games known folder, not `%USERPROFILE%`, because users relocate it (e.g. `
 ```bash
 dotnet build DcsMcp.slnx     # build everything (WinUI platform x64 is pinned in the .slnx)
 dotnet test DcsMcp.slnx      # unit + integration tests
-dotnet test test/DcsMcpBridge.UnitTests --filter FullyQualifiedName~AtcToolsTests   # single test class
+dotnet test test/DCS.AIAutomator.UnitTests --filter FullyQualifiedName~AtcToolsTests   # single test class
 ```
 
 Building `src/DCS.AIAutomator` directly (not via the `.slnx`) needs `-p:Platform=x64` (or
@@ -272,7 +307,7 @@ fails the build.
 - **`{ThemeResource}`, not `{StaticResource}`, for theme-scoped keys** — `StaticResource`
   can't see into `ThemeDictionaries` and silently fails to resolve.
 - **`ApplicationData` only works in a packaged process.** Keep it inside `SettingsService`
-  only — never in `src/DcsMcpBridge` or `src/DCS.Scripting`, since integration tests run the
+  only — never in a library (`src/DCS.AIAutomator.*`), since integration tests run the
   host unpackaged. Libraries take settings as plain parameters
   (`StartAsync(listenUrl, dcsIp, dcsPort)`).
 - **AOT/reflection:** the SDK's reflection-free serializer doesn't cover custom types. Tool
@@ -286,11 +321,11 @@ fails the build.
   `<FrameworkReference Include="Microsoft.AspNetCore.App" />` for `WebApplication`/`MapMcp`.
 - **Responses can arrive out of order** — don't assume request N's response is read N-th.
 - **Logging:** Serilog, configured in code (never `Serilog.Settings.Configuration` — reflection
-  fights AOT/trimming) by `DcsLogging` in `src/DcsMcpBridge`: CLEF JSON lines, rolled daily into
+  fights AOT/trimming) by `DcsLogging` in `src/DCS.AIAutomator.Mcp`: CLEF JSON lines, rolled daily into
   `dcs-aiautomator-yyyyMMdd.clef`, deleted after `LogRetentionDays` (default 7, by age via
   `retainedFileTimeLimit`). The app resolves the folder (`LocalCacheFolder\Logs`) and passes
   `DcsLogging.Provider` to `DcsMcpBridgeHost.StartAsync(loggerProvider:)` and uses it for its own
-  loggers, so one file has everything. `DCS.Scripting` sees only `Microsoft.Extensions.Logging`.
+  loggers, so one file has everything. Core sees only `Microsoft.Extensions.Logging`.
   Without a provider (tests) the host falls back to `AddDebug()`. Never add `AddConsole()` — a
   GUI-subsystem app has no console. Use structured templates (`"{Tool}"`), not interpolation.
   **Never log secrets, tool arguments, or Lua command bodies** — the tool-call filter logs only
