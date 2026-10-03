@@ -283,6 +283,11 @@ dotnet test DcsMcp.slnx      # unit + integration tests
 dotnet test test/DCS.AIAutomator.UnitTests --filter FullyQualifiedName~AtcToolsTests   # single test class
 ```
 
+CI (`.github/workflows/ci.yml`) runs that same build and test on `windows-latest` for every PR
+to `master` and every push to it. Test `.trx` results are uploaded as the `test-results`
+artifact. `dotnet build` doesn't produce the MSIX package, so CI needs no signing certificate;
+packaging belongs to the release pipeline (#22).
+
 Building `src/DCS.AIAutomator` directly (not via the `.slnx`) needs `-p:Platform=x64` (or
 `x86`/`ARM64`) — there's no `AnyCPU`, and MSIX packaging fails without one.
 
