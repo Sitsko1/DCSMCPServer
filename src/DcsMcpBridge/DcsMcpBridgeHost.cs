@@ -3,6 +3,7 @@ using System.Text.Json;
 using DCS.Scripting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,13 +33,35 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
 
     private WebApplication? _app;
 
+    // Read per request by the bearer check, so SetApiKey takes effect without a restart.
+    private volatile string _apiKey = "";
+
+    /// <summary>
+    /// Replaces the MCP API key immediately: requests with the old key get 401 from now on. No
+    /// restart, so the DCS connection isn't dropped.
+    /// </summary>
+    public void SetApiKey(string apiKey)
+    {
+        if (string.IsNullOrEmpty(apiKey)) throw new ArgumentException("An MCP API key is required.", nameof(apiKey));
+        _apiKey = apiKey;
+    }
+
     public async Task StartAsync(
         string listenUrl = "http://127.0.0.1:5270",
         string dcsIp = "127.0.0.1",
         int dcsPort = 1024,
         CancellationToken cancellationToken = default,
-        ILoggerProvider? loggerProvider = null)
+        ILoggerProvider? loggerProvider = null,
+        string? apiKey = null,
+        string? dcsLinkSecret = null)
     {
+        // No "auth off" mode (maintainer decision, #7): both secrets are required.
+        SetApiKey(apiKey ?? "");
+        if (!Secrets.IsWellFormed(dcsLinkSecret))
+        {
+            throw new ArgumentException("A well-formed DCS link secret is required.", nameof(dcsLinkSecret));
+        }
+
         Status.BridgeState = BridgeState.Starting;
         try
         {
@@ -59,7 +82,7 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
                 builder.Logging.AddDebug();
             }
 
-            builder.Services.AddDcsScripting(Status, dcsIp, dcsPort);
+            builder.Services.AddDcsScripting(Status, dcsIp, dcsPort, dcsLinkSecret!);
 
             // AtcAction has no source-generated JSON metadata in the SDK's default (reflection-free,
             // AOT-safe) serializer options — merge in AtcJsonContext for it.
@@ -78,6 +101,18 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             builder.WebHost.UseUrls(listenUrl);
 
             _app = builder.Build();
+
+            // Bearer API key on every request, checked before any MCP handling (constant time).
+            _app.Use(async (context, next) =>
+            {
+                if (!Secrets.BearerMatches(context.Request.Headers.Authorization, _apiKey))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.Response.Headers.WWWAuthenticate = "Bearer";
+                    return;
+                }
+                await next(context);
+            });
             _app.MapMcp("/mcp");
 
             await _app.StartAsync(cancellationToken);

@@ -18,9 +18,11 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     private readonly string _dcsIp;
     private readonly int _dcsPort;
     private readonly TimeSpan _notRespondingTimeout;
+    private readonly string _dcsLinkSecret;
 
     private TcpClient? _client;
     private NetworkStream? _stream;
+    private volatile bool _authenticated; // the Hooks script accepted our link secret on this connection
     private long _lastLineTicks = Environment.TickCount64; // written by the read loop, read by the watchdog
 
     /// <summary>
@@ -34,9 +36,15 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         BridgeStatus status,
         string dcsIp = "127.0.0.1",
         int dcsPort = 1024,
+        string dcsLinkSecret = "",
         TimeSpan? notRespondingTimeout = null,
         ILogger? dcsScriptLogger = null)
     {
+        if (!Secrets.IsWellFormed(dcsLinkSecret))
+        {
+            throw new ArgumentException("A well-formed DCS link secret is required.", nameof(dcsLinkSecret));
+        }
+        _dcsLinkSecret = dcsLinkSecret;
         _logger = logger;
         _dcsScriptLogger = dcsScriptLogger ?? logger;
         _status = status;
@@ -50,7 +58,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     /// </summary>
     public bool SendLuaCommand(string luaCode)
     {
-        if (_client == null || !_client.Connected || _stream == null) return false;
+        if (_client == null || !_client.Connected || _stream == null || !_authenticated) return false;
         try
         {
             if (!luaCode.EndsWith("\n")) luaCode += "\n";
@@ -76,39 +84,53 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            bool tcpConnected = false;
             try
             {
                 if (_client == null || !_client.Connected)
                 {
                     _client = new TcpClient();
                     await _client.ConnectAsync(_dcsIp, _dcsPort, stoppingToken);
+                    tcpConnected = true;
                     _stream = _client.GetStream();
                     Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
-                    _status.DcsConnected = true;
-                    _logger.LogInformation("Connected to DCS at {DcsHost}:{DcsPort}", _dcsIp, _dcsPort);
-                }
 
-                using var reader = new StreamReader(_stream, Encoding.UTF8, leaveOpen: true);
+                    // Handshake: the secret goes first, and DCS counts as connected only once the
+                    // Hooks script answers authOk. (Never logged.)
+                    _authenticated = false;
+                    byte[] auth = Encoding.UTF8.GetBytes($"AUTH {_dcsLinkSecret}\n");
+                    await _stream.WriteAsync(auth, stoppingToken);
+                }
+                tcpConnected = true;
+
+                using var reader = new StreamReader(_stream!, Encoding.UTF8, leaveOpen: true);
                 while (!stoppingToken.IsCancellationRequested && await reader.ReadLineAsync(stoppingToken) is string line)
                 {
-                    // Any line at all — even one we can't parse — proves DCS is alive.
-                    Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
-                    _status.LastTelemetryUtc = DateTimeOffset.UtcNow;
-                    _status.DcsNotResponding = false;
-
-                    if (DcsTelemetryParser.TryParse(line, out DcsLine? parsed))
+                    if (!DcsTelemetryParser.TryParse(line, out DcsLine? parsed))
                     {
-                        // Only mission reports touch mission/aircraft; heartbeat and pause lines
-                        // would otherwise wipe them.
-                        if (parsed.IsMissionReport)
-                        {
-                            _status.CurrentMission = parsed.Mission;
-                            _status.Aircraft = parsed.Aircraft;
-                            if (parsed.Mission is null) _status.DcsPaused = false; // mission over
-                        }
-                        if (parsed.Paused is bool paused) _status.DcsPaused = paused;
-                        if (parsed.Log is { } entry) ForwardScriptLog(entry);
+                        if (_authenticated) MarkAlive(); // garbage still proves an authenticated DCS is alive
+                        continue;
                     }
+
+                    if (!_authenticated)
+                    {
+                        HandleHandshakeReply(parsed);
+                        continue;
+                    }
+
+                    // Any line at all proves DCS is alive.
+                    MarkAlive();
+
+                    // Only mission reports touch mission/aircraft; heartbeat and pause lines
+                    // would otherwise wipe them.
+                    if (parsed.IsMissionReport)
+                    {
+                        _status.CurrentMission = parsed.Mission;
+                        _status.Aircraft = parsed.Aircraft;
+                        if (parsed.Mission is null) _status.DcsPaused = false; // mission over
+                    }
+                    if (parsed.Paused is bool paused) _status.DcsPaused = paused;
+                    if (parsed.Log is { } entry) ForwardScriptLog(entry);
                 }
 
                 // ReadLineAsync returned null: DCS closed the connection (e.g. the process was
@@ -132,14 +154,57 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                 {
                     _logger.LogDebug("DCS not reachable ({Reason}); retrying in 3 s", ex.Message);
                 }
+                if (!tcpConnected)
+                {
+                    _status.DcsAuthFailed = false; // DCS isn't there at all; an old auth failure no longer says anything
+                }
                 CleanConnection();
                 try { await Task.Delay(3000, stoppingToken); } catch (TaskCanceledException) { break; }
             }
         }
     }
 
+    private void MarkAlive()
+    {
+        Interlocked.Exchange(ref _lastLineTicks, Environment.TickCount64);
+        _status.LastTelemetryUtc = DateTimeOffset.UtcNow;
+        _status.DcsNotResponding = false;
+    }
+
+    /// <summary>The first meaningful line on a new connection must be the script's auth reply.</summary>
+    private void HandleHandshakeReply(DcsLine reply)
+    {
+        if (reply.AuthOk)
+        {
+            _authenticated = true;
+            MarkAlive();
+            _status.DcsAuthFailed = false;
+            _status.DcsConnected = true;
+            _logger.LogInformation("Connected to DCS at {DcsHost}:{DcsPort}", _dcsIp, _dcsPort);
+        }
+        else if (reply.AuthError)
+        {
+            FlagAuthFailed("DCS rejected the link secret; redeploy the Lua scripts and restart DCS");
+            // The script closes the connection itself; the end-of-stream path then retries.
+        }
+        else
+        {
+            // Data without a handshake: a Hooks script deployed before auth existed. Don't trust
+            // it, and don't stay connected to it.
+            FlagAuthFailed("DCS's Hooks script is outdated (no auth handshake); redeploy the Lua scripts and restart DCS");
+            throw new IOException("DCS sent data without authenticating.");
+        }
+    }
+
+    private void FlagAuthFailed(string reason)
+    {
+        if (!_status.DcsAuthFailed) _logger.LogWarning("DCS link not authenticated: {Reason}", reason); // once, not per retry
+        _status.DcsAuthFailed = true;
+    }
+
     private void CleanConnection()
     {
+        _authenticated = false;
         _stream?.Dispose();
         _client?.Dispose();
         _client = null;

@@ -51,6 +51,24 @@ public sealed class BridgeStatus
         }
     }
 
+    private bool _dcsAuthFailed;
+    /// <summary>
+    /// DCS's Hooks script rejected the app's link secret, or is an older script that doesn't do
+    /// the handshake at all. Either way the fix is "redeploy Lua scripts". Survives the reconnect
+    /// loop (each retry fails the same way); cleared by a successful handshake or when DCS can't
+    /// be reached at all.
+    /// </summary>
+    public bool DcsAuthFailed
+    {
+        get => _dcsAuthFailed;
+        set
+        {
+            if (_dcsAuthFailed == value) return;
+            _dcsAuthFailed = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     private bool _dcsPaused;
     /// <summary>The DCS simulation is paused (reported by the Hooks script's pause/resume callbacks).</summary>
     public bool DcsPaused

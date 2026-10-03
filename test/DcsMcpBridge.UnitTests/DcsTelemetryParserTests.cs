@@ -23,6 +23,18 @@ public class DcsTelemetryParserTests
         Assert.Null(parsed.Paused);
     }
 
+    [Theory]
+    [InlineData("""{"authOk":true}""", true, false)]
+    [InlineData("""{"authError":true}""", false, true)]
+    public void TryParse_AuthReplies_AreRecognized_AndAreNotMissionReports(string line, bool authOk, bool authError)
+    {
+        DcsTelemetryParser.TryParse(line, out DcsLine? parsed);
+
+        Assert.False(parsed!.IsMissionReport);
+        Assert.Equal(authOk, parsed.AuthOk);
+        Assert.Equal(authError, parsed.AuthError);
+    }
+
     [Fact]
     public void TryParse_LogLine_CarriesTheEntry_AndIsNotAMissionReport()
     {

@@ -30,6 +30,14 @@ public sealed class DcsTelemetryMessage
     [JsonPropertyName("log")]
     public DcsLogTelemetry? Log { get; set; }
 
+    /// <summary>The Hooks script accepted the app's link secret (reply to its AUTH line).</summary>
+    [JsonPropertyName("authOk")]
+    public bool? AuthOk { get; set; }
+
+    /// <summary>The Hooks script rejected the app's link secret; it closes the connection next.</summary>
+    [JsonPropertyName("authError")]
+    public bool? AuthError { get; set; }
+
     [JsonPropertyName("missionName")]
     public string? MissionName { get; set; }
 
@@ -76,7 +84,11 @@ internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 /// <param name="Aircraft">For a mission report: the player aircraft, or null when there isn't one.</param>
 /// <param name="Paused">Set by pause/resume lines; null when the line says nothing about pausing.</param>
 /// <param name="Log">A forwarded Hooks-script log message, if this line carries one.</param>
-public sealed record DcsLine(bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused, DcsLogEntry? Log = null);
+/// <param name="AuthOk">The script accepted the link secret.</param>
+/// <param name="AuthError">The script rejected the link secret.</param>
+public sealed record DcsLine(
+    bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused,
+    DcsLogEntry? Log = null, bool AuthOk = false, bool AuthError = false);
 
 /// <param name="Level">"info", "warning" or "error", as the Hooks script reports it.</param>
 public sealed record DcsLogEntry(string Level, string Message)
@@ -142,7 +154,8 @@ public static class DcsTelemetryParser
         }
 
         DcsLogEntry? log = message.Log is { Message: { } text } l ? new DcsLogEntry(l.Level ?? "info", text) : null;
-        parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused, log);
+        parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused, log,
+            AuthOk: message.AuthOk == true, AuthError: message.AuthError == true);
         return true;
     }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using DCS.Scripting;
 using Microsoft.Extensions.Logging;
+using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
@@ -20,6 +21,7 @@ public sealed partial class SettingsWindow : Window
     private readonly Func<bool, Task> _applySettingsAsync;
     private readonly NotificationService _notifications;
     private readonly ILogger _log;
+    private bool _apiKeyVisible;
     private static readonly LogLevel[] LogLevels = [LogLevel.Warning, LogLevel.Information, LogLevel.Debug];
 
     /// <param name="applySettingsAsync">Applies saved settings; the argument says whether the
@@ -44,6 +46,7 @@ public sealed partial class SettingsWindow : Window
         LogLevelBox.SelectedIndex = Math.Max(0, Array.IndexOf(LogLevels, _settings.LogLevel));
         LogRetentionBox.Value = _settings.LogRetentionDays;
         LogFolderText.Text = ((App)Application.Current).LogDirectory;
+        RenderApiKey();
     }
 
     private void OnSectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -122,7 +125,8 @@ public sealed partial class SettingsWindow : Window
 
     private void OnDeployClicked(object sender, RoutedEventArgs e)
     {
-        var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value);
+        var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value,
+            ((App)Application.Current).DcsLinkSecret);
         if (result.Success)
             _log.LogInformation("Lua scripts deployed: {DeployResult}", result.Message);
         else
@@ -132,6 +136,75 @@ public sealed partial class SettingsWindow : Window
             result.Success ? "Lua scripts deployed" : "Lua deploy failed",
             result.Message,
             result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
+    }
+
+    private static App CurrentApp => (App)Application.Current;
+
+    // Masked by default; the key is a credential, so it's only revealed on request.
+    private void RenderApiKey()
+    {
+        ApiKeyText.Text = _apiKeyVisible ? CurrentApp.McpApiKey : new string('•', 24);
+        ShowApiKeyButton.Content = _apiKeyVisible ? "Hide" : "Show";
+    }
+
+    private void OnShowApiKeyClicked(object sender, RoutedEventArgs e)
+    {
+        _apiKeyVisible = !_apiKeyVisible;
+        RenderApiKey();
+    }
+
+    private void OnCopyApiKeyClicked(object sender, RoutedEventArgs e) => CopyToClipboard(CurrentApp.McpApiKey);
+
+    private async void OnRegenerateApiKeyClicked(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = RootGrid.ActualTheme,
+            Title = "Regenerate the MCP API key?",
+            Content = "The current key stops working immediately. Every MCP client using it (e.g. Claude Code) " +
+                      "must be registered again with the new key.",
+            PrimaryButtonText = "Regenerate",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        CurrentApp.RegenerateApiKey();
+        RenderApiKey();
+        ClaudeCodeStatusText.Text = "Key regenerated — register with Claude Code again to update it.";
+        _notifications.Show("MCP API key regenerated", "Re-register your MCP clients with the new key.", NotificationSeverity.Warning);
+    }
+
+    private async void OnRegisterClaudeCodeClicked(object sender, RoutedEventArgs e)
+    {
+        ClaudeCodeStatusText.Text = "Registering…";
+        ClaudeCodeRegistrar.Result result = await ClaudeCodeRegistrar.RegisterAsync(CurrentApp.McpUrl, CurrentApp.McpApiKey);
+        ClaudeCodeStatusText.Text = result.ClaudeNotFound
+            ? result.Message + " Use Copy command."
+            : result.Message;
+        if (result.Success)
+            _log.LogInformation("Registered the MCP server with Claude Code at {McpUrl}", CurrentApp.McpUrl);
+        else
+            _log.LogWarning("Claude Code registration failed: {Reason}", result.Message); // already redacted
+        _notifications.Show(
+            result.Success ? "Registered with Claude Code" : "Claude Code registration failed",
+            result.Message,
+            result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
+    }
+
+    private void OnCopyClaudeCommandClicked(object sender, RoutedEventArgs e)
+    {
+        CopyToClipboard(ClaudeCodeRegistration.CopyableCommand(CurrentApp.McpUrl, CurrentApp.McpApiKey));
+        ClaudeCodeStatusText.Text = "Command copied — it contains your API key; paste it only into your own terminal.";
+    }
+
+    private static void CopyToClipboard(string text)
+    {
+        var package = new DataPackage();
+        package.SetText(text);
+        Clipboard.SetContent(package);
     }
 
     private void OnOpenLogFolderClicked(object sender, RoutedEventArgs e) => ((App)Application.Current).OpenLogFolder();

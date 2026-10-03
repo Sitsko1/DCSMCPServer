@@ -19,6 +19,7 @@ public sealed class BridgeStatusNotifier
     private BridgeState _lastBridgeState;
     private bool _lastDcsConnected;
     private bool _lastDcsNotResponding;
+    private bool _lastDcsAuthFailed;
     private string? _lastMissionName;
 
     // DCS script errors are already rate-limited per message in Lua (10 s); this caps toasts
@@ -34,6 +35,7 @@ public sealed class BridgeStatusNotifier
         _lastBridgeState = status.BridgeState;
         _lastDcsConnected = status.DcsConnected;
         _lastDcsNotResponding = status.DcsNotResponding;
+        _lastDcsAuthFailed = status.DcsAuthFailed;
         _lastMissionName = status.CurrentMission?.MissionName;
 
         status.Changed += OnStatusChanged;
@@ -100,6 +102,17 @@ public sealed class BridgeStatusNotifier
                 // Recovered on the same connection (a disconnect clears the flag too, but that
                 // already has its own "DCS disconnected" notification).
                 _notifications.Show("DCS responding again", "Live data from DCS has resumed.", NotificationSeverity.Success);
+            }
+        }
+
+        if (_status.DcsAuthFailed != _lastDcsAuthFailed)
+        {
+            _lastDcsAuthFailed = _status.DcsAuthFailed;
+            if (_status.DcsAuthFailed)
+            {
+                _notifications.Show("DCS rejected the connection",
+                    "DCS's Lua script doesn't match this app's link secret (or predates it). Redeploy the Lua scripts (Settings → DCS Integration) and restart DCS.",
+                    NotificationSeverity.Error);
             }
         }
 

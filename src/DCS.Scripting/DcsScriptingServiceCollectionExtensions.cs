@@ -20,7 +20,8 @@ public static class DcsScriptingServiceCollectionExtensions
         this IServiceCollection services,
         BridgeStatus? status = null,
         string dcsIp = "127.0.0.1",
-        int dcsPort = 1024)
+        int dcsPort = 1024,
+        string dcsLinkSecret = "")
     {
         services.AddSingleton(status ?? new BridgeStatus());
         services.AddSingleton(sp => new DcsConnection(
@@ -28,6 +29,7 @@ public static class DcsScriptingServiceCollectionExtensions
             sp.GetRequiredService<BridgeStatus>(),
             dcsIp,
             dcsPort,
+            dcsLinkSecret,
             dcsScriptLogger: sp.GetRequiredService<ILoggerFactory>().CreateLogger("DCS")));
         services.AddSingleton<IDcsConnection>(sp => sp.GetRequiredService<DcsConnection>());
         services.AddHostedService(sp => sp.GetRequiredService<DcsConnection>());

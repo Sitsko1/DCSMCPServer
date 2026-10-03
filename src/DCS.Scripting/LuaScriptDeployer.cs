@@ -28,7 +28,7 @@ public static class LuaScriptDeployer
 
     public sealed record DeployResult(bool Success, string Message);
 
-    public static DeployResult Deploy(string savedGamesPath, string dcsHost, int dcsPort)
+    public static DeployResult Deploy(string savedGamesPath, string dcsHost, int dcsPort, string dcsLinkSecret)
     {
         if (DcsPathValidator.ValidateSavedGamesPath(savedGamesPath) is { } pathError)
         {
@@ -43,7 +43,7 @@ public static class LuaScriptDeployer
 
             bool migrated = RemoveOldExportIntegration(scriptsDir);
 
-            string generated = LuaHooksScriptGenerator.Generate(dcsHost, dcsPort);
+            string generated = LuaHooksScriptGenerator.Generate(dcsHost, dcsPort, dcsLinkSecret);
             if (!migrated && File.Exists(hooksScriptPath) && File.ReadAllText(hooksScriptPath) == generated)
             {
                 return new DeployResult(true, "Already deployed - no changes were made.");

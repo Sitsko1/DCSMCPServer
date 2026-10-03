@@ -2,7 +2,7 @@ using DCS.Scripting;
 
 public class LuaHooksScriptGeneratorTests
 {
-    private static readonly string Lua = LuaHooksScriptGenerator.Generate("127.0.0.1", 1024);
+    private static readonly string Lua = LuaHooksScriptGenerator.Generate("127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
     [Fact]
     public void Generate_InterpolatesHostAndPort()
@@ -135,6 +135,40 @@ public class LuaHooksScriptGeneratorTests
         Assert.Contains("gsub('%c'", Lua);
         Assert.Contains(@"'\\u%04x'", Lua); // Lua source text: '\\u%04x' → JSON \u00XX
     }
+
+    [Fact]
+    public void Generate_EmbedsTheLinkSecret_AndChecksTheAuthLine()
+    {
+        Assert.Contains("local LINK_SECRET = \"TestLinkSecret_0123456789\"", Lua);
+        Assert.Contains("\"AUTH \" .. LINK_SECRET", Lua);
+        Assert.Contains("{\"authOk\":true}", Lua);
+        Assert.Contains("{\"authError\":true}", Lua);
+    }
+
+    [Fact]
+    public void Generate_DropsClientsThatDontAuthenticateInTime()
+    {
+        // Otherwise any local process could connect first and squat the single client slot.
+        Assert.Contains("AUTH_TIMEOUT = 2", Lua);
+    }
+
+    [Fact]
+    public void Generate_RunsNoCommandsAndSendsNothing_BeforeAuthentication()
+    {
+        // Every outbound path (telemetry, heartbeat, pause, forwarded logs) goes through a guard,
+        // and command execution only happens after the auth line has been accepted.
+        Assert.Contains("if not McpBridge.authenticated then return end", FunctionBody("local function mcpBridgeSendLine"));
+        string read = FunctionBody("local function mcpBridgeReadCommands");
+        Assert.True(read.IndexOf("McpBridge.authenticated") < read.IndexOf("loadstring("),
+            "the auth check must come before any loadstring");
+    }
+
+    [Theory]
+    [InlineData("has\"quote")]
+    [InlineData("has space")]
+    [InlineData("")]
+    public void Generate_RejectsSecretsThatCouldBreakOutOfTheLuaString(string secret) =>
+        Assert.Throws<ArgumentException>(() => LuaHooksScriptGenerator.Generate("127.0.0.1", 1024, secret));
 
     [Fact]
     public void Generate_ReportsPauseAndResume()

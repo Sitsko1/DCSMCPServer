@@ -23,19 +23,19 @@ public class LuaScriptDeployerTests : IDisposable
     [Fact]
     public void Deploy_WritesHooksScript_AndDoesNotCreateExportLua()
     {
-        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.True(result.Success);
-        Assert.Equal(LuaHooksScriptGenerator.Generate("127.0.0.1", 1024), File.ReadAllText(HooksScriptPath));
+        Assert.Equal(LuaHooksScriptGenerator.Generate("127.0.0.1", 1024, "TestLinkSecret_0123456789"), File.ReadAllText(HooksScriptPath));
         Assert.False(File.Exists(ExportLuaPath));
     }
 
     [Fact]
     public void Deploy_ReportsAlreadyDeployed_WhenHooksScriptIsIdentical()
     {
-        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
-        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.True(result.Success);
         Assert.Contains("Already deployed", result.Message);
@@ -44,14 +44,14 @@ public class LuaScriptDeployerTests : IDisposable
     [Fact]
     public void Deploy_RewritesHooksScript_WhenStale()
     {
-        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
         File.WriteAllText(HooksScriptPath, "-- stale");
 
-        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.True(result.Success);
         Assert.DoesNotContain("Already deployed", result.Message);
-        Assert.Equal(LuaHooksScriptGenerator.Generate("127.0.0.1", 1024), File.ReadAllText(HooksScriptPath));
+        Assert.Equal(LuaHooksScriptGenerator.Generate("127.0.0.1", 1024, "TestLinkSecret_0123456789"), File.ReadAllText(HooksScriptPath));
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class LuaScriptDeployerTests : IDisposable
         string original = OtherToolLine + "\r\n" + ExportDofileLine + "\r\n" + LegacyExportDofileLine + "\r\n";
         File.WriteAllText(ExportLuaPath, original);
 
-        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.True(result.Success);
         string exportLua = File.ReadAllText(ExportLuaPath);
@@ -81,7 +81,7 @@ public class LuaScriptDeployerTests : IDisposable
         Directory.CreateDirectory(ScriptsDir);
         File.WriteAllText(ExportLuaPath, OtherToolLine + "\n");
 
-        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.Equal(OtherToolLine + "\n", File.ReadAllText(ExportLuaPath));
         Assert.False(File.Exists(ExportLuaPath + ".bak"));
@@ -92,10 +92,10 @@ public class LuaScriptDeployerTests : IDisposable
     {
         // e.g. the Hooks script was copied in by hand but Export.lua still loads the old one,
         // which would fight the Hooks script for the port.
-        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
         File.WriteAllText(ExportLuaPath, ExportDofileLine + "\n");
 
-        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(_savedGamesDir, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.True(result.Success);
         Assert.DoesNotContain("DCSMcpBridgeExport.lua", File.ReadAllText(ExportLuaPath));
