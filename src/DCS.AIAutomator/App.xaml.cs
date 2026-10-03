@@ -20,6 +20,9 @@ public partial class App : Application
     private BridgeStatusNotifier? _statusNotifier;
     private DcsLogging? _logging;
     private ILogger _log = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+    private readonly SecretStore _secrets = new();
+    private string _apiKey = "";
+    private string _dcsLinkSecret = "";
     private ElementTheme _currentTheme = ElementTheme.Dark;
 
     public App()
@@ -67,6 +70,9 @@ public partial class App : Application
         {
             ViewLog = OpenLogFolder,
         };
+        // Both generated on first run and kept in the Credential Locker (never logged).
+        _apiKey = _secrets.GetOrCreate(SecretStore.McpApiKey);
+        _dcsLinkSecret = _secrets.GetOrCreate(SecretStore.DcsLinkSecret);
         _bridgeHost = new DcsMcpBridgeHost();
         _statusNotifier = new BridgeStatusNotifier(_bridgeHost.Status, _notifications);
         _bridgeHost.Status.Units = _settings.Units;
@@ -92,7 +98,8 @@ public partial class App : Application
     {
         try
         {
-            await _bridgeHost!.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort, loggerProvider: _logging!.Provider);
+            await _bridgeHost!.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort, loggerProvider: _logging!.Provider,
+                apiKey: _apiKey, dcsLinkSecret: _dcsLinkSecret);
         }
         catch (Exception ex)
         {
@@ -113,6 +120,26 @@ public partial class App : Application
         _settingsWindow.Activate();
     }
 
+    /// <summary>The MCP API key MCP clients must send as a bearer token. Shown in Settings; never logged.</summary>
+    public string McpApiKey => _apiKey;
+
+    /// <summary>The secret baked into the deployed Hooks script; DCS only talks to an app that sends it.</summary>
+    public string DcsLinkSecret => _dcsLinkSecret;
+
+    /// <summary>The MCP endpoint clients register against.</summary>
+    public string McpUrl => $"{_settings.McpListenUrl}/mcp";
+
+    /// <summary>
+    /// Replaces the MCP API key; requests with the old one are rejected immediately, without
+    /// restarting the bridge (so DCS stays connected). Registered clients must be re-registered.
+    /// </summary>
+    public void RegenerateApiKey()
+    {
+        _apiKey = _secrets.Regenerate(SecretStore.McpApiKey);
+        _bridgeHost?.SetApiKey(_apiKey);
+        _log.LogWarning("MCP API key regenerated; clients using the old key will get 401 until re-registered");
+    }
+
     public void OpenLogFolder()
     {
         if (string.IsNullOrEmpty(LogDirectory)) return;
@@ -129,7 +156,8 @@ public partial class App : Application
         try
         {
             await _bridgeHost.StopAsync();
-            await _bridgeHost.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort, loggerProvider: _logging!.Provider);
+            await _bridgeHost.StartAsync(_settings.McpListenUrl, _settings.DcsHost, _settings.DcsPort, loggerProvider: _logging!.Provider,
+                apiKey: _apiKey, dcsLinkSecret: _dcsLinkSecret);
         }
         catch (Exception ex)
         {

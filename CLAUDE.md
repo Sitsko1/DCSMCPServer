@@ -132,6 +132,35 @@ there) and `DCS World/Scripts/Export.lua` (the `Lo*` list). The script once reli
 active mission" forever. A speculative `multiplayer` field was removed (multiplayer is deferred
 to v2).
 
+### Authentication: MCP API key and DCS link secret (#7)
+
+Two independent secrets, both from `Secrets.NewSecret()` (32 random bytes, base64url), stored
+by the app in the Windows Credential Locker (`SecretStore`, app project only) and passed to the
+libraries as parameters. **There is no "auth off" mode**: `DcsMcpBridgeHost.StartAsync` throws
+without both.
+
+- **MCP API key:** every request to the MCP server must carry `Authorization: Bearer <key>`,
+  checked by middleware *before* MCP handling (`Secrets.BearerMatches`, constant-time), or it
+  gets `401`. `DcsMcpBridgeHost.SetApiKey` rotates it live (no restart, DCS stays connected).
+  Settings → Connection shows it masked (Show / Copy / Regenerate…) and has **Register with
+  Claude Code**, which runs `claude mcp remove`, then `claude mcp add --transport http --scope
+  user dcs-aiautomator <url> --header "Authorization: Bearer <key>"` (`ClaudeCodeRegistration`
+  builds the args, checked against Claude Code 2.1.283; `--header` is variadic so it goes after
+  name/url). It goes through `ArgumentList`, never a shell, and CLI output is redacted before it's
+  shown or logged.
+- **DCS link secret:** baked into the deployed Hooks script (deploy/generate take it as a
+  parameter; it must be base64url since it sits in a Lua string literal). After connecting,
+  `DcsConnection` sends `AUTH <secret>` first. The script runs no command and sends nothing
+  until that matches, then replies `{"authOk":true}`. On a mismatch it replies
+  `{"authError":true}` and closes. A client that doesn't authenticate within `AUTH_TIMEOUT` (2 s)
+  is dropped, so a stray process can't hold the single client slot. **`DcsConnected` means
+  authenticated**, not just TCP-connected. A script that streams without the handshake (deployed
+  before #7) or rejects the secret sets `BridgeStatus.DcsAuthFailed` → annunciator **AUTH
+  FAILED** + "redeploy Lua scripts, restart DCS" toast. It's cleared by a successful handshake,
+  or when DCS can't be reached at all.
+
+Neither secret is ever logged. Tests assert this for the connection, the host, and tool calls.
+
 ### DCS-side script: a Hooks script, and DCS is the socket server
 
 The DCS side is a **Hooks script** (`Saved Games\DCS\Scripts\Hooks\DCSMcpBridgeHooks.lua`), not

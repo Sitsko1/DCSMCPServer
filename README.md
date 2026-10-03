@@ -29,8 +29,18 @@ bridging tool calls to a small Lua script the app deploys into DCS.
 
 Deploy/run it from Visual Studio (Package and Publish, or F5) — that registers it as an
 installed app. Once installed, launch it from the Start menu like any other app. Once running,
-the MCP server is reachable at `http://127.0.0.1:5270/mcp`; point an MCP client at that URL to
-use its tools.
+the MCP server is reachable at `http://127.0.0.1:5270/mcp`. Requests must carry the app's API
+key as `Authorization: Bearer <key>`; anything else gets `401`.
+
+**Connecting Claude Code:** Settings (gear icon) → Connection → **Register with Claude Code**.
+That registers the server (URL + key) for your user. If the `claude` command isn't found, use
+**Copy command** and run it yourself. Re-register after changing the port or regenerating the
+key. For other MCP clients, use **Copy** next to the API key and configure the bearer header
+yourself.
+
+**Connecting DCS:** Settings → DCS Integration → **Deploy Lua scripts**, then restart DCS. The
+deployed script holds a secret shared with this app, and DCS only talks to an app that knows it.
+If the DCS indicator shows **AUTH FAILED**, redeploy and restart DCS.
 
 `dotnet run --project src/DCS.AIAutomator -p:Platform=x64` doesn't reliably work for this app —
 see the `dotnet run` gotcha in `CLAUDE.md` if you hit `COMException 0x80040154

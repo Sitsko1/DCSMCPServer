@@ -68,7 +68,7 @@ public class DcsPathValidatorTests : IDisposable
     {
         string install = MakeInstall();
 
-        var result = LuaScriptDeployer.Deploy(install, "127.0.0.1", 1024);
+        var result = LuaScriptDeployer.Deploy(install, "127.0.0.1", 1024, "TestLinkSecret_0123456789");
 
         Assert.False(result.Success);
         Assert.False(Directory.Exists(Path.Combine(install, "Scripts")));

@@ -18,6 +18,9 @@ public class McpServerIntegrationTests : IAsyncLifetime
     // running with the deployed script, which made the "DCS is down" test connect to real DCS.
     private const int UnusedDcsPort = 1025;
 
+    private const string ApiKey = "IntegrationTestApiKey_0123456789abcdef";
+    private const string DcsLinkSecret = "IntegrationTestLinkSecret_0123456789";
+
     private readonly CapturingLoggerProvider _logs = new();
     private DcsMcpBridgeHost _host = null!;
     private McpClient _client = null!;
@@ -25,20 +28,90 @@ public class McpServerIntegrationTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         _host = new DcsMcpBridgeHost();
-        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort, loggerProvider: _logs);
-
-        var transport = new HttpClientTransport(new HttpClientTransportOptions
-        {
-            Endpoint = new Uri($"{ListenUrl}/mcp"),
-            TransportMode = HttpTransportMode.StreamableHttp,
-        });
-        _client = await McpClient.CreateAsync(transport);
+        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort, loggerProvider: _logs, apiKey: ApiKey, dcsLinkSecret: DcsLinkSecret);
+        _client = await ConnectAsync(ApiKey);
     }
 
     public async Task DisposeAsync()
     {
         await _client.DisposeAsync();
         await _host.DisposeAsync();
+    }
+
+    private static Task<McpClient> ConnectAsync(string apiKey) =>
+        McpClient.CreateAsync(new HttpClientTransport(new HttpClientTransportOptions
+        {
+            Endpoint = new Uri($"{ListenUrl}/mcp"),
+            TransportMode = HttpTransportMode.StreamableHttp,
+            AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {apiKey}" },
+        }));
+
+    // A minimal MCP initialize request, posted raw so the HTTP status is visible.
+    private static async Task<HttpResponseMessage> PostInitializeAsync(string? authorization)
+    {
+        using var http = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{ListenUrl}/mcp")
+        {
+            Content = new StringContent(
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""",
+                System.Text.Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Accept.ParseAdd("application/json");
+        request.Headers.Accept.ParseAdd("text/event-stream");
+        if (authorization is not null) request.Headers.TryAddWithoutValidation("Authorization", authorization);
+        return await http.SendAsync(request);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Bearer wrong-key")]
+    [InlineData("IntegrationTestApiKey_0123456789abcdef")] // right key, no "Bearer" scheme
+    public async Task Requests_WithoutTheRightBearerKey_Get401(string? authorization)
+    {
+        using HttpResponseMessage response = await PostInitializeAsync(authorization);
+
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Requests_WithTheRightBearerKey_AreServed()
+    {
+        using HttpResponseMessage response = await PostInitializeAsync($"Bearer {ApiKey}");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RotatingTheKey_RejectsTheOldOne_Immediately()
+    {
+        const string newKey = "RotatedApiKey_abcdefghijklmnopqrstuvwxyz";
+        _host.SetApiKey(newKey);
+
+        using HttpResponseMessage oldKey = await PostInitializeAsync($"Bearer {ApiKey}");
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, oldKey.StatusCode);
+
+        await using McpClient rotated = await ConnectAsync(newKey);
+        Assert.Contains(await rotated.ListToolsAsync(), t => t.Name == "get_aircraft_state");
+    }
+
+    [Fact]
+    public async Task StartingWithoutAnApiKey_IsRefused()
+    {
+        // No "auth off" mode (maintainer decision).
+        await using var host = new DcsMcpBridgeHost();
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            host.StartAsync("http://127.0.0.1:5272", dcsPort: UnusedDcsPort, apiKey: "", dcsLinkSecret: DcsLinkSecret));
+    }
+
+    [Fact]
+    public async Task TheApiKeyAndLinkSecret_AreNeverLogged()
+    {
+        await CallGetAircraftStateAsync();
+        (await PostInitializeAsync("Bearer wrong-key")).Dispose();
+        (await PostInitializeAsync($"Bearer {ApiKey}")).Dispose();
+
+        Assert.NotEmpty(_logs.Entries);
+        Assert.DoesNotContain(_logs.Entries, e => e.Message.Contains(ApiKey) || e.Message.Contains(DcsLinkSecret));
     }
 
     [Fact]
