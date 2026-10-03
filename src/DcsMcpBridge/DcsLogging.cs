@@ -24,7 +24,9 @@ public sealed class DcsLogging : IDisposable
     /// <param name="logDirectory">Resolved by the app (packaged local cache folder); never read
     /// from ApplicationData here, since tests run unpackaged.</param>
     /// <param name="retentionDays">Days to keep log files. Read once at startup.</param>
-    public DcsLogging(string logDirectory, LogLevel minimumLevel, int retentionDays)
+    /// <param name="fileNamePrefix">Separate prefixes for separate processes (e.g. the stdio relay)
+    /// so two processes never write the same file.</param>
+    public DcsLogging(string logDirectory, LogLevel minimumLevel, int retentionDays, string fileNamePrefix = FileNamePrefix)
     {
         LogDirectory = logDirectory;
         _levelSwitch = new LoggingLevelSwitch(ToSerilog(minimumLevel));
@@ -33,7 +35,7 @@ public sealed class DcsLogging : IDisposable
             .Enrich.FromLogContext()
             .WriteTo.File(
                 new CompactJsonFormatter(),
-                Path.Combine(logDirectory, FileNamePrefix + ".clef"),
+                Path.Combine(logDirectory, fileNamePrefix + ".clef"),
                 rollingInterval: RollingInterval.Day,
                 fileSizeLimitBytes: MaxFileSizeBytes,
                 rollOnFileSizeLimit: true,

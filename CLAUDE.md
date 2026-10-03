@@ -69,7 +69,11 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     available in code-behind).
   - `MainWindow` — "glass cockpit" annunciator panel with a fixed palette, deliberately not
     Mica. Below the mission readout, an "Aircraft status" `Expander` renders
-    `BridgeStatus.Aircraft` (~5 Hz) in `BridgeStatus.Units`.
+    `BridgeStatus.Aircraft` (~5 Hz) in `BridgeStatus.Units`. The **AI CLIENTS** lamp renders
+    `BridgeStatus.McpClients` (`McpClientActivity`). The server is stateless, so there's no
+    connect/disconnect to see: ACTIVE means a request in the last 60 s, then IDLE. AUTH FAILED
+    means a recent 401 with no success since. The host records successes in a message filter
+    (name from `clientInfo`) and 401s in the bearer middleware. A 1 s timer re-renders the lamp.
   - `SettingsWindow` — nothing persists until **Save**, which writes via `SettingsService`
     and calls `App.ApplySettingsAsync(restartBridge)`. The bridge (and so the DCS connection)
     restarts only when the MCP port or DCS host/port changed; everything else, including
@@ -160,6 +164,49 @@ without both.
   or when DCS can't be reached at all.
 
 Neither secret is ever logged. Tests assert this for the connection, the host, and tool calls.
+
+### AI agents and the Claude Desktop relay (#15)
+
+Settings → **AI agents** lists only the agents detected on this PC, each with Connect /
+Disconnect. One `IAgentIntegration` per agent (`AgentIntegrations.cs`, app project). Add a class
+for a new agent (OpenAI/Gemini come later); the page needs no change.
+
+- **Claude Code** (`ClaudeCodeAgent`): detected by `claude` on PATH; connected state from `claude
+  mcp get dcs-aiautomator` (exit 0/1); Connect/Disconnect via `claude mcp add/remove` (#7). Its
+  entry embeds the URL and key, so a key regeneration or port change offers to update it.
+- **Claude Desktop** (`ClaudeDesktopAgent`): `claude_desktop_config.json` only takes **stdio**
+  servers, and its remote "Connectors" can't reach `127.0.0.1`. So the entry launches **this app's
+  own exe** as a relay: `{"command": "%LOCALAPPDATA%\\Microsoft\\WindowsApps\\dcs-aiautomator.exe",
+  "args": ["--mcp-relay"]}`, through the package's **app execution alias**
+  (`Package.appxmanifest`). `ClaudeDesktopConfig` edits only our key.
+  - **Relay mode:** `Program.cs` is a custom `Main` (`DISABLE_XAML_GENERATED_MAIN`). With
+    `--mcp-relay` it runs `McpRelayMode` and never starts WinUI. Otherwise it does exactly what
+    the XAML compiler generates. Running as the packaged app, the relay reads the port from
+    `SettingsService` and the key from the Credential Locker (`SecretStore.TryGet`; it never mints
+    one). So Claude Desktop's config holds **no URL and no key**, and never needs updating.
+  - **`McpStdioRelay` (in `DcsMcpBridge`) must stay a dumb pipe:** it forwards JSON-RPC between
+    a stdio transport and `HttpClientTransport` (+ bearer header), hosts no tools and has no DCS
+    logic. That's what keeps it from being the deleted stdio-exe bridge. If the app is down or
+    rejects the key, each request gets a JSON-RPC error saying so (no hang). stdout carries only
+    JSON-RPC; the relay logs to its own `dcs-aiautomator-relay-*.clef` file.
+  - **MSIX AppData virtualization:** a packaged app's *edits to existing* files under
+    `%APPDATA%` go to the real file, but files it *creates* there are redirected to a private,
+    per-package copy that other apps can't see. So Connect refuses when Claude Desktop has no
+    config file yet (the user creates it via Claude Desktop → Settings → Developer → Edit Config),
+    and backups go to the app's `LocalCache\Backups`, not next to the config. The alternative,
+    the `unvirtualizedResources` restricted capability, is documented as not intended for apps
+    like this.
+
+Verified live (Claude Code 2.1.283, Claude Desktop, F/A-18C):
+- **Claude Desktop:** Connect + restart → `get_aircraft_state` returns data through the relay.
+  This confirms the alias-launched relay has package identity: it reads the settings and the
+  Credential Locker. With the app closed, Claude Desktop reports a clear "not running" error,
+  with no hang.
+- **Claude Code:** Disconnect/Connect from the page update `claude mcp get`. After Regenerate,
+  the old key gets 401 (AI CLIENTS → AUTH FAILED) until the offered update + `/mcp` reconnect.
+- **Missing config:** Connect refuses with the Edit Config hint; backups land in
+  `LocalCache\Backups`.
+- **AI CLIENTS lamp:** shows both agents by their `clientInfo` names, ACTIVE → IDLE.
 
 ### DCS-side script: a Hooks script, and DCS is the socket server
 
