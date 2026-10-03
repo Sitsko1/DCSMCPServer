@@ -56,7 +56,7 @@ public static partial class AircraftStateFormatter
 
     public static string Failures(IReadOnlyList<string>? failures) => failures switch
     {
-        null => "Unavailable",
+        null => "Not reported by this aircraft", // never "None": we simply don't know
         [] => "None",
         _ => string.Join(", ", failures.Select(FailureName)),
     };

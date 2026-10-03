@@ -18,6 +18,15 @@ public sealed class BridgeStatus
 {
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// An error the DCS-side Hooks script reported about itself (already rate-limited there).
+    /// Lets the app surface it as a notification without the library knowing about the UI.
+    /// Raised on DcsConnection's background thread.
+    /// </summary>
+    public event EventHandler<string>? DcsScriptError;
+
+    internal void RaiseDcsScriptError(string message) => DcsScriptError?.Invoke(this, message);
+
     private BridgeState _bridgeState = BridgeState.Stopped;
     public BridgeState BridgeState
     {

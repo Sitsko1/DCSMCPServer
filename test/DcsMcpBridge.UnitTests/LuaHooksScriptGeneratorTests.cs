@@ -80,6 +80,17 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_ReportsFailureFlagsOnlyForFc3Aircraft()
+    {
+        // LoGetMCPState only reflects the simplified FC3 flight models. Verified live: an F/A-18C
+        // with several triggered failures (engine, MC 2, generator, …) reports none of them.
+        Assert.Contains("[\"F-15C\"] = true", Lua);
+        Assert.Contains("[\"Su-27\"] = true", Lua);
+        Assert.DoesNotContain("[\"FA-18C_hornet\"]", Lua); // full-fidelity: not an FC3 list entry
+        Assert.Contains("mcpBridgeFc3Types[typeName]", Lua);
+    }
+
+    [Fact]
     public void Generate_ThrottlesTelemetry_ButDrainsCommandsEveryFrame()
     {
         Assert.Contains("TELEMETRY_INTERVAL = 0.2", Lua); // invariant culture, never "0,2"
@@ -105,6 +116,24 @@ public class LuaHooksScriptGeneratorTests
         int heartbeat = frame.IndexOf("mcpBridgeSendHeartbeat()");
         int throttle = frame.IndexOf("TELEMETRY_INTERVAL");
         Assert.True(heartbeat >= 0 && heartbeat < throttle, "heartbeat must not sit behind the telemetry throttle");
+    }
+
+    [Fact]
+    public void Generate_ForwardsScriptLogMessagesToTheApp_RateLimitedAndBuffered()
+    {
+        Assert.Contains("log.write(\"DCSMcpBridge\"", Lua);       // still written to dcs.log
+        Assert.Contains("{\"log\":{\"level\":", Lua);            // ...and sent to the app
+        Assert.Contains("LOG_REPEAT_INTERVAL = 10", Lua);        // same message at most once per 10 s
+        Assert.Contains("LOG_BUFFER_SIZE = 10", Lua);            // held until the app connects
+        Assert.Contains("mcpBridgeFlushLogBuffer()", Lua);
+    }
+
+    [Fact]
+    public void Generate_JsonEscapesControlCharacters()
+    {
+        // Lua error messages can contain tabs/newlines; raw control characters make invalid JSON.
+        Assert.Contains("gsub('%c'", Lua);
+        Assert.Contains(@"'\\u%04x'", Lua); // Lua source text: '\\u%04x' → JSON \u00XX
     }
 
     [Fact]

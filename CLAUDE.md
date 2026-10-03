@@ -54,7 +54,8 @@ grepping file by file. After significant code changes, refresh it with `/graphif
     script (below). Pure string building / file I/O against a passed-in path.
 - **`src/DcsMcpBridge`** — class library, just the MCP composition root: `DcsMcpBridgeHost`
   builds a `WebApplication` (`AddDcsScripting`, `WithHttpTransport`, `WithTools<AtcTools>`,
-  `MapMcp("/mcp")`) and exposes `Status`. Owns no DCS logic.
+  `MapMcp("/mcp")`) and exposes `Status`. Owns no DCS logic. Also holds `DcsLogging` (the
+  Serilog pipeline — see Gotchas) and the MCP tool-call logging filter.
 - **`src/DCS.AIAutomator`** — WinUI 3 app, MSIX-packaged. `App.xaml.cs` creates the
   `DcsMcpBridgeHost` and `NotificationService`, starts the bridge on a background task with
   `SettingsService` values, and owns the current `ElementTheme` (applied to every open
@@ -92,13 +93,16 @@ grepping file by file. After significant code changes, refresh it with `/graphif
 ```
 
 `ownship` is sent only when there's a player aircraft, in DCS's SI units (m, m/s, rad) —
-conversion is C#-side only. Any value may be `null`; `failures: null` means DCS gave no failure
-data ("Unavailable"), `[]` means none active. Telemetry is throttled to ~5 Hz on model time
+conversion is C#-side only. Any value may be `null`; `failures: null` means this aircraft
+doesn't report failures ("Not reported by this aircraft"), `[]` means none active. Failures come
+from `LoGetMCPState`, which only the simplified **FC3** aircraft set — full-fidelity modules don't
+(verified live on the F/A-18C), so the script sends `null` for any type not in its FC3 list. Telemetry is throttled to ~5 Hz on model time
 (`TelemetryIntervalSeconds`), but commands are drained every frame.
 
 Besides mission reports, the script sends `{"heartbeat":true}` (~1/s on `Sim.getRealTime()`,
-independent of the telemetry throttle) and `{"paused":true|false}` (from
-`onSimulationPause`/`onSimulationResume`). **Only lines carrying `missionActive` are mission
+independent of the telemetry throttle), `{"paused":true|false}` (from
+`onSimulationPause`/`onSimulationResume`) and `{"log":{"level":"info|error","message":"..."}}`
+(its own `mcpBridgeLog` output; also written to `dcs.log`). **Only lines carrying `missionActive` are mission
 reports** — `DcsTelemetryMessage.MissionActive` is `bool?` on purpose, because reading an
 absent field as `false` would clear the mission on every heartbeat. `TryParse` returns a
 `DcsLine` saying which kind it was; any new message type must stay a non-mission-report too.
@@ -107,8 +111,12 @@ absent field as `false` would clear the mission on every heartbeat. `TryParse` r
 unpaused DCS sends nothing for `DefaultNotRespondingTimeout` (5 s) — a hung DCS, which unlike a
 killed one keeps its socket open. It never closes the socket (maintainer decision: keep
 waiting); any line clears it. A freeze in the DCS menus can't be detected: no Hooks callback
-runs there. Unverified live: whether `onSimulationFrame` keeps firing while paused (the
-`paused` line makes it not matter).
+runs there. Verified live: normal pause (Esc) shows PAUSED; killing DCS shows DISCONNECTED and a
+restarted DCS reconnects. **Active Pause is not reported** — DCS fires no
+`onSimulationPause` for it (the rest of the sim keeps running), so the app stays CONNECTED; that's
+a DCS limitation, not a bug. Suspending `DCS.exe` (Resource Monitor) shows NOT RESPONDING, and
+resuming it returns to CONNECTED. Unverified live: whether `onSimulationFrame` keeps firing while
+paused (the `paused` line makes it not matter).
 
 `TryParse` returns `false` only for malformed input: `missionActive: false` clears
 `CurrentMission`, a garbage line leaves prior state alone; missing fields default to
@@ -201,8 +209,18 @@ fails the build.
 - **ASP.NET Core from plain libraries:** both libraries use `Microsoft.NET.Sdk`, so they need
   `<FrameworkReference Include="Microsoft.AspNetCore.App" />` for `WebApplication`/`MapMcp`.
 - **Responses can arrive out of order** — don't assume request N's response is read N-th.
-- **Logging:** `DcsMcpBridgeHost` uses only `AddDebug()`. A GUI-subsystem app has no console;
-  don't add `AddConsole()` back.
+- **Logging:** Serilog, configured in code (never `Serilog.Settings.Configuration` — reflection
+  fights AOT/trimming) by `DcsLogging` in `src/DcsMcpBridge`: CLEF JSON lines, rolled daily into
+  `dcs-aiautomator-yyyyMMdd.clef`, deleted after `LogRetentionDays` (default 7, by age via
+  `retainedFileTimeLimit`). The app resolves the folder (`LocalCacheFolder\Logs`) and passes
+  `DcsLogging.Provider` to `DcsMcpBridgeHost.StartAsync(loggerProvider:)` and uses it for its own
+  loggers, so one file has everything. `DCS.Scripting` sees only `Microsoft.Extensions.Logging`.
+  Without a provider (tests) the host falls back to `AddDebug()`. Never add `AddConsole()` — a
+  GUI-subsystem app has no console. Use structured templates (`"{Tool}"`), not interpolation.
+  **Never log secrets, tool arguments, or Lua command bodies** — the tool-call filter logs only
+  name/outcome/duration, and an integration test asserts arguments never reach the log. DCS
+  Hooks-script errors are forwarded as `{"log":{...}}` lines (rate-limited per message in Lua),
+  logged under the `DCS` category, and raised as `BridgeStatus.DcsScriptError` for a toast.
 - **`FolderPicker` needs HWND interop**:
   `InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(window))` before
   `PickSingleFolderAsync()` (see `SettingsWindow.xaml.cs`).

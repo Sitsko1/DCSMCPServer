@@ -68,10 +68,12 @@ public class AircraftStateFormatterTests
     }
 
     [Fact]
-    public void Failures_NoneUnavailableOrReadableNames()
+    public void Failures_NoneNotReportedOrReadableNames()
     {
         Assert.Equal("None", AircraftStateFormatter.Failures([]));
-        Assert.Equal("Unavailable", AircraftStateFormatter.Failures(null));
+        // null must never read as "None": full-fidelity modules (e.g. the F/A-18C) don't report
+        // failures through DCS's flags at all, so "None" would falsely claim a healthy aircraft.
+        Assert.Equal("Not reported by this aircraft", AircraftStateFormatter.Failures(null));
         Assert.Equal("Left engine failure, ACS failure, Stall warning",
             AircraftStateFormatter.Failures(["LeftEngineFailure", "ACSFailure", "StallSignalization"]));
     }

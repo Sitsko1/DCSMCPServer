@@ -26,6 +26,10 @@ public sealed class DcsTelemetryMessage
     [JsonPropertyName("paused")]
     public bool? Paused { get; set; }
 
+    /// <summary>A message from the Hooks script's own log (mcpBridgeLog), forwarded to the app.</summary>
+    [JsonPropertyName("log")]
+    public DcsLogTelemetry? Log { get; set; }
+
     [JsonPropertyName("missionName")]
     public string? MissionName { get; set; }
 
@@ -38,6 +42,12 @@ public sealed class DcsTelemetryMessage
     /// <summary>Absent when there's no player aircraft (spectator, dead, menus).</summary>
     [JsonPropertyName("ownship")]
     public OwnshipTelemetry? Ownship { get; set; }
+}
+
+public sealed class DcsLogTelemetry
+{
+    [JsonPropertyName("level")] public string? Level { get; set; }
+    [JsonPropertyName("message")] public string? Message { get; set; }
 }
 
 /// <summary>Player aircraft state in DCS's SI units; see <see cref="AircraftState"/>.</summary>
@@ -65,7 +75,14 @@ internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 /// <param name="Mission">For a mission report: the active mission, or null for "no mission".</param>
 /// <param name="Aircraft">For a mission report: the player aircraft, or null when there isn't one.</param>
 /// <param name="Paused">Set by pause/resume lines; null when the line says nothing about pausing.</param>
-public sealed record DcsLine(bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused);
+/// <param name="Log">A forwarded Hooks-script log message, if this line carries one.</param>
+public sealed record DcsLine(bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused, DcsLogEntry? Log = null);
+
+/// <param name="Level">"info", "warning" or "error", as the Hooks script reports it.</param>
+public sealed record DcsLogEntry(string Level, string Message)
+{
+    public bool IsError => Level.Equals("error", StringComparison.OrdinalIgnoreCase);
+}
 
 public static class DcsTelemetryParser
 {
@@ -124,7 +141,8 @@ public static class DcsTelemetryParser
             }
         }
 
-        parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused);
+        DcsLogEntry? log = message.Log is { Message: { } text } l ? new DcsLogEntry(l.Level ?? "info", text) : null;
+        parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused, log);
         return true;
     }
 }
