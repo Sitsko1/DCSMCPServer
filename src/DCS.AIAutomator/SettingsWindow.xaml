@@ -20,6 +20,7 @@
                          IsSettingsVisible="False" SelectionChanged="OnSectionChanged" Background="{ThemeResource PanelBackgroundBrush}">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Connection" Tag="Connection" IsSelected="True" />
+                <NavigationViewItem Content="AI agents" Tag="Agents" />
                 <NavigationViewItem Content="Paths" Tag="Paths" />
                 <NavigationViewItem Content="DCS Integration" Tag="Integration" />
                 <NavigationViewItem Content="Notifications" Tag="Notifications" />
@@ -87,20 +88,6 @@
                                 <Button Content="Copy" Click="OnCopyApiKeyClicked" />
                                 <Button Content="Regenerate…" Click="OnRegenerateApiKeyClicked" />
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource SettingsCardStyle}">
-                        <StackPanel Spacing="8">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="Claude Code" Style="{StaticResource SettingsCardTitleStyle}" />
-                                <TextBlock Text="Registers this app's MCP server (URL and API key) with Claude Code for your user. Run it again after changing the port or regenerating the key." Style="{StaticResource SettingsCardDescriptionStyle}" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Register with Claude Code" Click="OnRegisterClaudeCodeClicked" Style="{ThemeResource AccentButtonStyle}" />
-                                <Button Content="Copy command" Click="OnCopyClaudeCommandClicked" ToolTipService.ToolTip="Copy the claude mcp add command to run it yourself" />
-                            </StackPanel>
-                            <TextBlock x:Name="ClaudeCodeStatusText" Style="{StaticResource SubtleMonoStyle}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -197,6 +184,13 @@
                             </ComboBox>
                         </Grid>
                     </Border>
+                </StackPanel>
+
+                <!-- AI agents (#15): rows are built in code for the agents detected on this PC -->
+                <StackPanel x:Name="AgentsPanel" Spacing="12" Visibility="Collapsed">
+                    <TextBlock Text="Connect AI agents installed on this PC to this app's MCP server. Only agents found on this machine are listed." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" />
+                    <StackPanel x:Name="AgentsList" Spacing="12" />
+                    <TextBlock x:Name="NoAgentsText" Text="No supported AI agents were found on this PC (supported: Claude Code, Claude Desktop)." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" Visibility="Collapsed" />
                 </StackPanel>
 
                 <!-- Diagnostics -->

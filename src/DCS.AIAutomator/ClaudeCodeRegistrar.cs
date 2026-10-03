@@ -35,6 +35,60 @@ public static class ClaudeCodeRegistrar
         }
     }
 
+    /// <summary>True/false from <c>claude mcp get</c> (exit 0 = registered); null if claude can't be run.</summary>
+    public static async Task<bool?> IsRegisteredAsync()
+    {
+        try
+        {
+            (int exitCode, _) = await RunClaudeAsync(ClaudeCodeRegistration.GetArguments());
+            return exitCode == 0;
+        }
+        catch (Win32Exception)
+        {
+            return null;
+        }
+    }
+
+    public static async Task<Result> UnregisterAsync()
+    {
+        try
+        {
+            (int exitCode, string output) = await RunClaudeAsync(ClaudeCodeRegistration.RemoveArguments());
+            if (exitCode != 0 && ClaudeCodeRegistration.IsNotRegisteredOutput(output))
+            {
+                return new Result(true, false, "Already disconnected from Claude Code."); // nothing to remove
+            }
+            return exitCode == 0
+                ? new Result(true, false, "Removed from Claude Code.")
+                : new Result(false, false, $"claude exited with code {exitCode}: {output.Trim()}");
+        }
+        catch (Win32Exception)
+        {
+            return new Result(false, true, "Claude Code (the 'claude' command) wasn't found.");
+        }
+    }
+
+    /// <summary>Whether a <c>claude</c> executable is on PATH (no process started).</summary>
+    public static bool IsInstalled()
+    {
+        string path = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (string dir in path.Split(System.IO.Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            foreach (string name in new[] { "claude.exe", "claude.cmd" })
+            {
+                try
+                {
+                    if (System.IO.File.Exists(System.IO.Path.Combine(dir.Trim(), name))) return true;
+                }
+                catch (ArgumentException)
+                {
+                    // malformed PATH entry
+                }
+            }
+        }
+        return false;
+    }
+
     private static async Task<(int ExitCode, string Output)> RunClaudeAsync(string[] arguments)
     {
         var startInfo = new ProcessStartInfo("claude")

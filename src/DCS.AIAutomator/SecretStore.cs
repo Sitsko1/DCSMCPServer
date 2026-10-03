@@ -35,6 +35,22 @@ public sealed class SecretStore
         }
     }
 
+    /// <summary>The stored secret, or null if the app hasn't created it yet (used by the relay,
+    /// which must never mint a key the running app doesn't know about).</summary>
+    public string? TryGet(string name)
+    {
+        try
+        {
+            PasswordCredential credential = _vault.Retrieve(Resource, name);
+            credential.RetrievePassword();
+            return credential.Password;
+        }
+        catch (Exception ex) when (ex.HResult == ElementNotFound)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Replaces the secret with a new random one and returns it.</summary>
     public string Regenerate(string name)
     {

@@ -53,6 +53,13 @@ public sealed partial class MainWindow : Window
         _status.Changed += OnStatusChanged;
         Render();
 
+        // ACTIVE fades to IDLE (and AUTH FAILED expires) with time alone, with no status change.
+        DispatcherQueueTimer clientsTimer = _dispatcherQueue.CreateTimer();
+        clientsTimer.Interval = TimeSpan.FromSeconds(1);
+        clientsTimer.Tick += (_, _) => RenderClients();
+        clientsTimer.Start();
+        Closed += (_, _) => clientsTimer.Stop();
+
         // Initialize theme toggle to reflect current requested theme
         if (this.Content is FrameworkElement fe)
         {
@@ -95,6 +102,7 @@ public sealed partial class MainWindow : Window
     {
         RenderBridge();
         RenderDcs();
+        RenderClients();
         RenderMission();
         RenderAircraft();
     }
@@ -133,6 +141,34 @@ public sealed partial class MainWindow : Window
         DcsStateText.Foreground = new SolidColorBrush(color);
         DcsAddressText.Text = _status.DcsAuthFailed ? "Redeploy Lua scripts, restart DCS" : _status.DcsEndpoint;
     }
+
+    private void RenderClients()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        McpClientSnapshot clients = _status.McpClients.Snapshot(now);
+        var (color, label) = clients.State switch
+        {
+            McpClientState.Active => (NominalColor, "ACTIVE"),
+            McpClientState.Idle => (IdleColor, "IDLE"),
+            McpClientState.AuthFailed => (FaultColor, "AUTH FAILED"),
+            _ => (IdleColor, "NO CLIENTS"),
+        };
+
+        ClientsLamp.Background = new SolidColorBrush(color);
+        ClientsStateText.Text = label;
+        ClientsStateText.Foreground = new SolidColorBrush(color);
+        ClientsDetailText.Text = clients.State switch
+        {
+            McpClientState.AuthFailed => "Rejected API key: reconnect it in Settings → AI agents",
+            McpClientState.NoClients => "No AI agent has called yet",
+            _ => $"{(clients.ClientNames.Count > 0 ? string.Join(" · ", clients.ClientNames) : "MCP client")} — last call {Ago(now - clients.LastSeenUtc!.Value)}",
+        };
+    }
+
+    private static string Ago(TimeSpan elapsed) =>
+        elapsed.TotalSeconds < 60 ? "just now"
+        : elapsed.TotalMinutes < 60 ? $"{(int)elapsed.TotalMinutes} min ago"
+        : $"{(int)elapsed.TotalHours} h ago";
 
     private void RenderMission()
     {

@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using DCS.Scripting;
 using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.DataTransfer;
@@ -58,6 +60,8 @@ public sealed partial class SettingsWindow : Window
         NotificationsPanel.Visibility = tag == "Notifications" ? Visibility.Visible : Visibility.Collapsed;
         DisplayPanel.Visibility = tag == "Display" ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsPanel.Visibility = tag == "Diagnostics" ? Visibility.Visible : Visibility.Collapsed;
+        AgentsPanel.Visibility = tag == "Agents" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "Agents") _ = RenderAgentsAsync(); // re-detect each visit (agents may have been installed meanwhile)
     }
 
     private async void OnBrowseInstallPathClicked(object sender, RoutedEventArgs e)
@@ -173,31 +177,120 @@ public sealed partial class SettingsWindow : Window
 
         CurrentApp.RegenerateApiKey();
         RenderApiKey();
-        ClaudeCodeStatusText.Text = "Key regenerated — register with Claude Code again to update it.";
         _notifications.Show("MCP API key regenerated", "Re-register your MCP clients with the new key.", NotificationSeverity.Warning);
+        await OfferAgentUpdatesAsync("The MCP API key was regenerated");
     }
 
-    private async void OnRegisterClaudeCodeClicked(object sender, RoutedEventArgs e)
+    private IReadOnlyList<IAgentIntegration> DetectAgents() =>
+        AgentIntegrations.Detected(CurrentApp, Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "Backups"));
+
+    private async Task RenderAgentsAsync()
     {
-        ClaudeCodeStatusText.Text = "Registering…";
-        ClaudeCodeRegistrar.Result result = await ClaudeCodeRegistrar.RegisterAsync(CurrentApp.McpUrl, CurrentApp.McpApiKey);
-        ClaudeCodeStatusText.Text = result.ClaudeNotFound
-            ? result.Message + " Use Copy command."
-            : result.Message;
+        IReadOnlyList<IAgentIntegration> agents = DetectAgents();
+        AgentsList.Children.Clear();
+        NoAgentsText.Visibility = agents.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        foreach (IAgentIntegration agent in agents)
+        {
+            AgentsList.Children.Add(await BuildAgentCardAsync(agent));
+        }
+    }
+
+    private async Task<Border> BuildAgentCardAsync(IAgentIntegration agent)
+    {
+        var status = new TextBlock { Style = (Style)Application.Current.Resources["SubtleMonoStyle"], TextWrapping = TextWrapping.Wrap, Text = "Checking…" };
+        var connect = new Button { Content = "Connect", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        var disconnect = new Button { Content = "Disconnect" };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { connect, disconnect } };
+        if (agent is ClaudeCodeAgent claudeCode)
+        {
+            var copy = new Button { Content = "Copy command" };
+            ToolTipService.SetToolTip(copy, "Copy the claude mcp add command to run it yourself");
+            copy.Click += (_, _) =>
+            {
+                CopyToClipboard(claudeCode.CopyableCommand());
+                status.Text = "Command copied — it contains your API key; paste it only into your own terminal.";
+            };
+            buttons.Children.Add(copy);
+        }
+
+        connect.Click += async (_, _) => await RunAgentActionAsync(agent, agent.ConnectAsync, "connected", status);
+        disconnect.Click += async (_, _) => await RunAgentActionAsync(agent, agent.DisconnectAsync, "disconnected", status);
+
+        var card = new Border
+        {
+            Style = (Style)Application.Current.Resources["SettingsCardStyle"],
+            Child = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new StackPanel
+                    {
+                        Spacing = 2,
+                        Children =
+                        {
+                            new TextBlock { Text = agent.Name, Style = (Style)Application.Current.Resources["SettingsCardTitleStyle"] },
+                            new TextBlock { Text = agent.Description, Style = (Style)Application.Current.Resources["SettingsCardDescriptionStyle"], TextWrapping = TextWrapping.Wrap },
+                        },
+                    },
+                    buttons,
+                    status,
+                },
+            },
+        };
+        status.Text = ConnectionText(await agent.IsConnectedAsync());
+        return card;
+    }
+
+    private static string ConnectionText(bool? connected) => connected switch
+    {
+        true => "Connected",
+        false => "Not connected",
+        null => "Connection state unknown",
+    };
+
+    private async Task RunAgentActionAsync(IAgentIntegration agent, Func<Task<AgentResult>> action, string verb, TextBlock status)
+    {
+        status.Text = "Working…";
+        AgentResult result = await action();
+        status.Text = $"{result.Message}  ({ConnectionText(await agent.IsConnectedAsync())})";
         if (result.Success)
-            _log.LogInformation("Registered the MCP server with Claude Code at {McpUrl}", CurrentApp.McpUrl);
+            _log.LogInformation("AI agent {Agent} {Verb}", agent.Name, verb);
         else
-            _log.LogWarning("Claude Code registration failed: {Reason}", result.Message); // already redacted
+            _log.LogWarning("AI agent {Agent} not {Verb}: {Reason}", agent.Name, verb, result.Message); // messages never contain the key
         _notifications.Show(
-            result.Success ? "Registered with Claude Code" : "Claude Code registration failed",
+            result.Success ? $"{agent.Name} {verb}" : $"{agent.Name}: action failed",
             result.Message,
             result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
     }
 
-    private void OnCopyClaudeCommandClicked(object sender, RoutedEventArgs e)
+    /// <summary>After a key or port change, offers to update connected agents whose entries embed them.</summary>
+    private async Task OfferAgentUpdatesAsync(string reason)
     {
-        CopyToClipboard(ClaudeCodeRegistration.CopyableCommand(CurrentApp.McpUrl, CurrentApp.McpApiKey));
-        ClaudeCodeStatusText.Text = "Command copied — it contains your API key; paste it only into your own terminal.";
+        foreach (IAgentIntegration agent in DetectAgents().Where(a => a.NeedsUpdateWhenKeyOrPortChanges))
+        {
+            if (await agent.IsConnectedAsync() != true) continue;
+
+            var dialog = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+                RequestedTheme = RootGrid.ActualTheme,
+                Title = $"Update {agent.Name}?",
+                Content = $"{reason}, but {agent.Name} still has the old one and will be refused until it's updated.",
+                PrimaryButtonText = "Update now",
+                CloseButtonText = "Later",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) continue;
+
+            AgentResult result = await agent.ConnectAsync();
+            _log.LogInformation("AI agent {Agent} update after change: {Outcome}", agent.Name, result.Success ? "succeeded" : "failed");
+            _notifications.Show(
+                result.Success ? $"{agent.Name} updated" : $"{agent.Name}: update failed",
+                result.Message,
+                result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
+        }
     }
 
     private static void CopyToClipboard(string text)
@@ -218,7 +311,7 @@ public sealed partial class SettingsWindow : Window
         if (!ValidatePaths())
         {
             // The errors render under the path boxes, which may be on a hidden tab — jump to it.
-            SectionNav.SelectedItem = SectionNav.MenuItems[1];
+            SectionNav.SelectedItem = SectionNav.MenuItems.OfType<NavigationViewItem>().First(i => (string)i.Tag == "Paths");
             SaveStatusText.Text = "Not saved: fix the DCS paths.";
             return;
         }
@@ -262,6 +355,7 @@ public sealed partial class SettingsWindow : Window
             _notifications.Show("Settings saved",
                 connectionChanged ? "Bridge restarted with the new settings." : "Applied without restarting the bridge.",
                 NotificationSeverity.Success);
+            if (changed.Contains(nameof(SettingsService.McpPort))) await OfferAgentUpdatesAsync("The MCP port changed");
             Close(); // the toast in the main window confirms the save
         }
         catch (Exception ex)

@@ -9,6 +9,7 @@ namespace DCS.AIAutomator;
 /// status object exposes a single coarse <see cref="BridgeStatus.Changed"/> event, so this class
 /// tracks the previous value of each observable and raises a notification only on an actual
 /// transition (bridge start/stop/fault, DCS connect/disconnect, DCS not responding/recovered,
+/// an AI agent rejected for a wrong API key,
 /// mission start). Pause/resume deliberately raise nothing — the annunciator shows it.
 /// </summary>
 public sealed class BridgeStatusNotifier
@@ -20,6 +21,7 @@ public sealed class BridgeStatusNotifier
     private bool _lastDcsConnected;
     private bool _lastDcsNotResponding;
     private bool _lastDcsAuthFailed;
+    private bool _lastClientAuthFailed;
     private string? _lastMissionName;
 
     // DCS script errors are already rate-limited per message in Lua (10 s); this caps toasts
@@ -113,6 +115,18 @@ public sealed class BridgeStatusNotifier
                 _notifications.Show("DCS rejected the connection",
                     "DCS's Lua script doesn't match this app's link secret (or predates it). Redeploy the Lua scripts (Settings → DCS Integration) and restart DCS.",
                     NotificationSeverity.Error);
+            }
+        }
+
+        bool clientAuthFailed = _status.McpClients.Snapshot(DateTimeOffset.UtcNow).State == McpClientState.AuthFailed;
+        if (clientAuthFailed != _lastClientAuthFailed)
+        {
+            _lastClientAuthFailed = clientAuthFailed;
+            if (clientAuthFailed)
+            {
+                _notifications.Show("AI agent rejected",
+                    "An AI agent used an old or wrong MCP API key. Reconnect it in Settings → AI agents.",
+                    NotificationSeverity.Warning);
             }
         }
 
