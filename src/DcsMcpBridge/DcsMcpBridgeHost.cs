@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DCS.Scripting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -63,6 +64,7 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
         }
 
         Status.BridgeState = BridgeState.Starting;
+        Status.McpClients.Reset();
         try
         {
             var builder = WebApplication.CreateBuilder();
@@ -96,7 +98,8 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
                 .WithHttpTransport(o => o.Stateless = true)
                 .WithTools<AtcTools>(atcToolSerializerOptions)
                 .WithTools<AircraftTools>()
-                .WithRequestFilters(filters => filters.AddCallToolFilter(LogToolCall));
+                .WithRequestFilters(filters => filters.AddCallToolFilter(LogToolCall))
+                .WithMessageFilters(filters => filters.AddIncomingFilter(RecordClientActivity));
 
             builder.WebHost.UseUrls(listenUrl);
 
@@ -109,6 +112,7 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     context.Response.Headers.WWWAuthenticate = "Bearer";
+                    Status.McpClients.RecordAuthFailure(DateTimeOffset.UtcNow);
                     return;
                 }
                 await next(context);
@@ -128,6 +132,26 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Records each authenticated MCP message for the main window's AI CLIENTS lamp. The client's
+    /// name comes from its <c>clientInfo</c>: known to the server per request on newer protocol
+    /// revisions, otherwise only on the <c>initialize</c> request itself (the server is stateless).
+    /// </summary>
+    private McpMessageHandler RecordClientActivity(McpMessageHandler next) => async (context, cancellationToken) =>
+    {
+        string? name = context.Server.ClientInfo?.Name;
+        if (name is null
+            && context.JsonRpcMessage is JsonRpcRequest { Method: RequestMethods.Initialize, Params: JsonObject p }
+            && p["clientInfo"] is JsonObject clientInfo
+            && clientInfo["name"] is JsonValue value
+            && value.TryGetValue(out string? initializeName))
+        {
+            name = initializeName;
+        }
+        Status.McpClients.RecordRequest(name, DateTimeOffset.UtcNow);
+        await next(context, cancellationToken);
+    };
 
     /// <summary>
     /// Logs every MCP tool call: name, outcome and duration. Never the arguments — they're

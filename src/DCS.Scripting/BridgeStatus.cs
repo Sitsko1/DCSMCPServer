@@ -27,6 +27,18 @@ public sealed class BridgeStatus
 
     internal void RaiseDcsScriptError(string message) => DcsScriptError?.Invoke(this, message);
 
+    public BridgeStatus()
+    {
+        McpClients.Changed += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Which AI agents have reached the MCP server, and when (recorded by DcsMcpBridgeHost). Its
+    /// changes raise <see cref="Changed"/>; Active fades to Idle with time alone, so a UI showing it
+    /// also re-renders on a timer.
+    /// </summary>
+    public McpClientActivity McpClients { get; } = new();
+
     private BridgeState _bridgeState = BridgeState.Stopped;
     public BridgeState BridgeState
     {

@@ -32,11 +32,21 @@ installed app. Once installed, launch it from the Start menu like any other app.
 the MCP server is reachable at `http://127.0.0.1:5270/mcp`. Requests must carry the app's API
 key as `Authorization: Bearer <key>`; anything else gets `401`.
 
-**Connecting Claude Code:** Settings (gear icon) → Connection → **Register with Claude Code**.
-That registers the server (URL + key) for your user. If the `claude` command isn't found, use
-**Copy command** and run it yourself. Re-register after changing the port or regenerating the
-key. For other MCP clients, use **Copy** next to the API key and configure the bearer header
+**Connecting AI agents:** Settings (gear icon) → **AI agents** lists the supported agents found
+on this PC:
+- **Claude Code:** **Connect** registers the server (URL + key) for your user. If the `claude`
+  command can't be run, use **Copy command** and run it yourself. After changing the port or
+  regenerating the key, the app offers to update it.
+- **Claude Desktop:** **Connect** adds an entry that runs this app as a small relay. No key is
+  stored in Claude Desktop's config, so it never needs updating. Restart Claude Desktop
+  afterwards. If Claude Desktop has never created its config file, open Claude Desktop →
+  Settings → Developer → **Edit Config** once first. DCS.AIAutomator must be running for Claude
+  Desktop to use it. For other MCP clients, use **Copy** next to the API key and configure the bearer header
 yourself.
+
+The main window's **AI CLIENTS** lamp shows **ACTIVE** when an agent has called in the last
+minute and **IDLE** after that (with the agents' names). **AUTH FAILED** means an agent was
+rejected for an old or wrong key; reconnect it in Settings → AI agents.
 
 **Connecting DCS:** Settings → DCS Integration → **Deploy Lua scripts**, then restart DCS. The
 deployed script holds a secret shared with this app, and DCS only talks to an app that knows it.

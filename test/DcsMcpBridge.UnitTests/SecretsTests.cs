@@ -42,6 +42,11 @@ public class ClaudeCodeRegistrationTests
     }
 
     [Fact]
+    public void GetArguments_QueryOurEntry() =>
+        // Exit code 0 = registered, 1 = not (checked against Claude Code 2.1.283).
+        Assert.Equal(["mcp", "get", "dcs-aiautomator"], ClaudeCodeRegistration.GetArguments());
+
+    [Fact]
     public void RemoveArguments_RemoveOnlyOurUserScopedEntry() =>
         Assert.Equal(["mcp", "remove", "--scope", "user", "dcs-aiautomator"], ClaudeCodeRegistration.RemoveArguments());
 
@@ -63,4 +68,12 @@ public class ClaudeCodeRegistrationTests
         Assert.DoesNotContain(Key, redacted);
         Assert.Contains("***", redacted);
     }
+
+    [Theory]
+    [InlineData("No MCP server named \"dcs-aiautomator\" in user scope", true)]
+    [InlineData("No MCP server named \"dcs-aiautomator\". Configured servers: a, b", true)]
+    [InlineData("Failed to write config: EACCES", false)]
+    [InlineData("", false)]
+    public void IsNotRegisteredOutput(string output, bool expected) =>
+        Assert.Equal(expected, ClaudeCodeRegistration.IsNotRegisteredOutput(output));
 }

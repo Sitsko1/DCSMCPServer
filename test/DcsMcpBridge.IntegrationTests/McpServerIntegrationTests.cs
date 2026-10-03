@@ -95,6 +95,54 @@ public class McpServerIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ClientRequests_AreRecorded_AsActive_WithTheClientsName()
+    {
+        await using McpClient named = await McpClient.CreateAsync(
+            new HttpClientTransport(new HttpClientTransportOptions
+            {
+                Endpoint = new Uri($"{ListenUrl}/mcp"),
+                TransportMode = HttpTransportMode.StreamableHttp,
+                AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {ApiKey}" },
+            }),
+            new McpClientOptions { ClientInfo = new Implementation { Name = "named-test-client", Version = "1.0" } });
+
+        await named.CallToolAsync("get_aircraft_state");
+
+        McpClientSnapshot snapshot = _host.Status.McpClients.Snapshot(DateTimeOffset.UtcNow);
+        Assert.Equal(McpClientState.Active, snapshot.State);
+        Assert.Equal("named-test-client", snapshot.ClientNames[0]);
+    }
+
+    [Fact]
+    public async Task AnInitializeRequest_RecordsTheClientInfoName()
+    {
+        _host.Status.McpClients.Reset();
+
+        using HttpResponseMessage response = await PostInitializeAsync($"Bearer {ApiKey}");
+
+        Assert.Equal(["t"], _host.Status.McpClients.Snapshot(DateTimeOffset.UtcNow).ClientNames);
+    }
+
+    [Fact]
+    public async Task ARejectedKey_IsRecorded_AsAuthFailed()
+    {
+        using HttpResponseMessage response = await PostInitializeAsync("Bearer wrong-key");
+
+        Assert.Equal(McpClientState.AuthFailed, _host.Status.McpClients.Snapshot(DateTimeOffset.UtcNow).State);
+    }
+
+    [Fact]
+    public async Task RestartingTheBridge_ForgetsClientActivity()
+    {
+        await _client.ListToolsAsync();
+        await _host.StopAsync();
+
+        await _host.StartAsync(ListenUrl, dcsPort: UnusedDcsPort, loggerProvider: _logs, apiKey: ApiKey, dcsLinkSecret: DcsLinkSecret);
+
+        Assert.Equal(McpClientState.NoClients, _host.Status.McpClients.Snapshot(DateTimeOffset.UtcNow).State);
+    }
+
+    [Fact]
     public async Task StartingWithoutAnApiKey_IsRefused()
     {
         // No "auth off" mode (maintainer decision).
