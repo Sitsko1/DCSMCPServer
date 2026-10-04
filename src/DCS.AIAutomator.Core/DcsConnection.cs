@@ -264,11 +264,13 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _client?.Dispose();
         _client = null;
         _stream = null;
-        _status.DcsConnected = false;
+        // Clear what DCS reported before announcing the disconnect, so nothing reacting to
+        // DcsConnected = false (UI, notifier, tests) can still see the old mission/aircraft.
         _status.DcsPaused = false;
         _status.DcsNotResponding = false;
         _status.CurrentMission = null;
         _status.Aircraft = null;
+        _status.DcsConnected = false;
     }
 
     private void ForwardScriptLog(DcsLogEntry entry)

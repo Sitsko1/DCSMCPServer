@@ -41,6 +41,11 @@ public class McpStdioRelayTests : IAsyncLifetime
 
         return await McpClient.CreateAsync(
             new StreamClientTransport(serverInput: clientToRelay, serverOutput: clientIn),
+            // The client probes with server/discover first and falls back to initialize when the
+            // probe times out (5 s by default). A slow first request on CI tripped that fallback,
+            // which the relay mishandles (the probe's protocol header sticks, #36).
+            // Wait as long as the whole connect may take, so these tests don't depend on timing.
+            clientOptions: new McpClientOptions { DiscoverProbeTimeout = TimeSpan.FromSeconds(15) },
             cancellationToken: new CancellationTokenSource(TimeSpan.FromSeconds(15)).Token);
     }
 
