@@ -23,11 +23,14 @@ public static class DcsWireSamples
     public const string Log = """{"log":{"level":"error","message":"frame error: boom"}}""";
     public static readonly string AuthOk = $$"""{"authOk":true,"protocol":{{LuaHooksScriptGenerator.ProtocolVersion}}}""";
     public const string AuthError = """{"authError":true}""";
+    public const string CommandOk = """{"commandResult":{"id":7,"ok":true}}""";
+    public const string CommandFailed = """{"commandResult":{"id":8,"ok":false,"error":"no mission is running"}}""";
 
     public static IEnumerable<string> All =>
     [
         MissionWithOwnship, MissionWithOwnshipNoFailures, MissionWithOwnshipFailuresNotReported,
         MissionWithoutOwnship, MissionEnded, Heartbeat, Paused, Resumed, Log, AuthOk, AuthError,
+        CommandOk, CommandFailed,
     ];
 
     public static TheoryData<string> AllLines => new(All);
@@ -88,7 +91,7 @@ public class DcsWireContractTests
     }
 
     private static SortedSet<string> DtoKeys() =>
-        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry) }
+        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry), typeof(DcsCommandResultTelemetry) }
             .SelectMany(t => t.GetProperties())
             .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name));
 }

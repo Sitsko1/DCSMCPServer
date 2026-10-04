@@ -136,6 +136,42 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_NeverRunsWhatTheAppSendsAsLua()
+    {
+        Assert.DoesNotContain("loadstring", Lua);
+        Assert.DoesNotContain("dostring(", Lua.Replace("net.dostring_in(", ""));
+        Assert.Contains("net.json2lua(line)", Lua); // commands are decoded as data...
+        Assert.Contains("mcpBridgeCommands[command.cmd]", Lua); // ...and dispatched to a fixed handler table
+    }
+
+    [Fact]
+    public void Generate_AnswersEveryCommand_IncludingUnknownOnes()
+    {
+        Assert.Contains("\"unknown command: \"", Lua);
+        Assert.Contains("{\"commandResult\":{\"id\":%d,\"ok\":true}", Lua);
+        Assert.Contains("{\"commandResult\":{\"id\":%d,\"ok\":false,\"error\":\"%s\"}", Lua);
+    }
+
+    [Fact]
+    public void Generate_MessageHandler_QuotesTheTextAsALuaLiteral_InMissionScripting()
+    {
+        string handler = FunctionBody("function mcpBridgeCommands.message(c)");
+        Assert.Contains("type(c.text) ~= \"string\"", handler); // validated
+        Assert.Contains("trigger.action.outText(%q, %d)", handler); // %q-quoted, never spliced in raw
+        Assert.Contains("net.dostring_in, \"mission\"", Lua);
+        Assert.Contains("return a_do_script(%q)", Lua);
+        Assert.Contains($"local MAX_MESSAGE_SECONDS = {DcsCommands.MaxMessageSeconds}", Lua);
+    }
+
+    [Fact]
+    public void Generate_ReportsMissionScriptingNotEnabled_InsteadOfFailingSilently()
+    {
+        string run = FunctionBody("local function mcpBridgeRunInMission(code)");
+        Assert.Contains("MISSION_SCRIPTING_DISABLED", run);
+        Assert.Contains("\"no mission is running\"", run);
+    }
+
+    [Fact]
     public void Generate_EmbedsTheLinkSecret_AndChecksTheAuthLine()
     {
         Assert.Contains("local LINK_SECRET = \"TestLinkSecret_0123456789\"", Lua);
@@ -158,8 +194,8 @@ public class LuaHooksScriptGeneratorTests
         // and command execution only happens after the auth line has been accepted.
         Assert.Contains("if not McpBridge.authenticated then return end", FunctionBody("local function mcpBridgeSendLine"));
         string read = FunctionBody("local function mcpBridgeReadCommands");
-        Assert.True(read.IndexOf("McpBridge.authenticated") < read.IndexOf("loadstring("),
-            "the auth check must come before any loadstring");
+        Assert.True(read.IndexOf("McpBridge.authenticated") < read.IndexOf("mcpBridgeHandleCommand(line)"),
+            "the auth check must come before any command is handled");
     }
 
     [Theory]

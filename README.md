@@ -8,8 +8,8 @@ bridging tool calls to a small Lua script the app deploys into DCS.
 
 - Runs an MCP server ([`ModelContextProtocol.AspNetCore`](https://github.com/modelcontextprotocol/csharp-sdk))
   in-process, over HTTP, exposing `get_aircraft_state` (the player aircraft's type, position,
-  altitude, speeds, heading and malfunctions) and `send_atc_instruction` (currently broken, see
-  issue #4).
+  altitude, speeds, heading and malfunctions) and `send_atc_instruction` (shows an ATC
+  instruction on screen in DCS; tasking AI flights is planned, #29–#31).
 - Maintains a persistent connection to that script's telemetry socket (`127.0.0.1:1024` by
   default).
 - Shows live status in its window: whether the MCP bridge is up, whether DCS is connected, and
@@ -50,6 +50,9 @@ rejected for an old or wrong key; reconnect it in Settings → AI agents.
 
 **Connecting DCS:** Settings → DCS Integration → **Deploy Lua scripts**, then restart DCS. The
 deployed script holds a secret shared with this app, and DCS only talks to an app that knows it.
+Deploy also asks to **allow mission scripting**: two lines in `Saved Games\DCS\Config\autoexec.cfg`
+that DCS requires before the script can show messages in a mission. Your other settings there are
+kept, and a `.bak` is made. Decline, and everything else still works; only messages fail, with an error.
 If the DCS indicator shows **AUTH FAILED** or **SCRIPT OUTDATED** (the deployed script is from
 another version of this app), redeploy and restart DCS.
 

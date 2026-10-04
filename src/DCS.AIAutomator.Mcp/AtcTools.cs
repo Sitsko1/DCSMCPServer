@@ -23,8 +23,9 @@ public partial class AtcJsonContext : JsonSerializerContext
 }
 
 /// <summary>
-/// ATC (air traffic control) tool for DCS World, backed by a live socket connection to
-/// DCS's Export.lua. Port of the hand-rolled CustomAtcToolHandler onto the ModelContextProtocol SDK.
+/// ATC (air traffic control) tool for DCS World. Sends structured commands to the DCS Hooks
+/// script (see <see cref="DcsCommands"/>) and reports what DCS actually did. For now it only shows
+/// the instruction on screen; tasking AI flights comes in #29-#31.
 /// </summary>
 [McpServerToolType]
 public class AtcTools
@@ -36,16 +37,30 @@ public class AtcTools
         _connection = connection;
     }
 
+    /// <summary>Seconds the instruction stays on screen.</summary>
+    public const int MessageSeconds = 10;
+
     [McpServerTool(Name = "send_atc_instruction")]
-    [Description("Transmits dynamic flight adjustments, route updates, and safe routing guidance vectors to aircraft.")]
-    public string SendAtcInstruction(
-        [Description("The exact flight indicator group callsign (e.g., 'Enfield 1-1').")] string aircraft_callsign,
-        [Description("The explicit flight operation action.")] AtcAction action,
-        [Description("The physical compass direction degrees heading parameters to fly.")] double heading = 360)
+    [Description("Shows an ATC instruction to the player as an on-screen message in DCS. It does not move or task any aircraft. Reports whether DCS displayed it.")]
+    public async Task<string> SendAtcInstruction(
+        [Description("The flight's callsign, e.g. 'Enfield 1-1'.")] string aircraft_callsign,
+        [Description("The instruction.")] AtcAction action,
+        [Description("Heading to fly, in degrees (1-360).")] double heading = 360,
+        CancellationToken cancellationToken = default)
     {
-        string lua = $"trigger.action.outText(\"ATC to {aircraft_callsign}: Perform {action} fly heading {heading:000}\", 10)\n";
-        return _connection.SendLuaCommand(lua)
-            ? "ATC instruction broadcasted successfully."
-            : "Error: DCS interface is down.";
+        string text = $"ATC to {aircraft_callsign}: {Describe(action)}, fly heading {heading:000}";
+        DcsCommandResult result = await _connection.ShowMessageAsync(text, MessageSeconds, cancellationToken);
+        return result.Ok
+            ? $"Shown on screen in DCS: \"{text}\""
+            : $"Error: DCS didn't show the instruction: {result.Error}";
     }
+
+    private static string Describe(AtcAction action) => action switch
+    {
+        AtcAction.Vectors => "vectors",
+        AtcAction.ClearToLand => "cleared to land",
+        AtcAction.Hold => "hold",
+        AtcAction.Orbit => "orbit",
+        _ => action.ToString(),
+    };
 }

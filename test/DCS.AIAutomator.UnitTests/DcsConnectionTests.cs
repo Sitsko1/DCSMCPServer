@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -10,6 +12,7 @@ public class DcsConnectionTests : IAsyncLifetime
 {
     // Short stand-in for the real 5 s not-responding timeout, so tests stay fast.
     private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromMilliseconds(500);
 
     private const string Secret = "TestLinkSecret_0123456789";
     private const string MissionLine = """{"missionActive":true,"aircraft":"F/A-18C","ownship":{"lat":1,"lon":2}}""";
@@ -23,7 +26,8 @@ public class DcsConnectionTests : IAsyncLifetime
     {
         _fakeDcs.Start();
         int port = ((IPEndPoint)_fakeDcs.LocalEndpoint).Port;
-        _connection = new DcsConnection(_log, _status, "127.0.0.1", port, Secret, Timeout, dcsScriptLogger: _log);
+        _connection = new DcsConnection(_log, _status, "127.0.0.1", port, Secret, Timeout, dcsScriptLogger: _log,
+            commandTimeout: CommandTimeout);
         await _connection.StartAsync(CancellationToken.None);
     }
 
@@ -186,6 +190,7 @@ public class DcsConnectionTests : IAsyncLifetime
     [Theory]
     [InlineData("""{"authOk":true}""")] // deployed before protocol versioning
     [InlineData("""{"authOk":true,"protocol":0}""")]
+    [InlineData("""{"authOk":true,"protocol":1}""")] // before structured commands (#27)
     [InlineData("""{"authOk":true,"protocol":999}""")]
     public async Task AuthOkWithAnotherProtocolVersion_IsScriptOutdated_NotConnected(string reply)
     {
@@ -242,6 +247,108 @@ public class DcsConnectionTests : IAsyncLifetime
 
         Assert.DoesNotContain(_log.Messages, m => m.Contains(Secret));
     }
+
+    [Fact]
+    public async Task Command_IsSentAsJson_AndReturnsTheScriptsResult()
+    {
+        using TcpClient dcsSide = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected);
+
+        Task<DcsCommandResult> sent = _connection.ShowMessageAsync("ATC to \"Enfield\" 1-1", 10);
+        JsonElement command = JsonDocument.Parse(await ReadLine(dcsSide)).RootElement;
+        Assert.Equal("message", command.GetProperty("cmd").GetString());
+        Assert.Equal("ATC to \"Enfield\" 1-1", command.GetProperty("text").GetString()); // data, not code
+        Assert.Equal(10, command.GetProperty("seconds").GetInt32());
+
+        await Send(dcsSide, CommandResult(command.GetProperty("id").GetInt64(), ok: true));
+        Assert.True((await sent).Ok);
+    }
+
+    [Fact]
+    public async Task Command_FailsWithTheScriptsError()
+    {
+        using TcpClient dcsSide = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected);
+
+        Task<DcsCommandResult> sent = _connection.ShowMessageAsync("hi");
+        long id = JsonDocument.Parse(await ReadLine(dcsSide)).RootElement.GetProperty("id").GetInt64();
+        await Send(dcsSide, CommandResult(id, ok: false, error: "no mission is running"));
+
+        Assert.Equal(DcsCommandResult.Failed("no mission is running"), await sent);
+    }
+
+    [Fact]
+    public async Task Replies_AreMatchedById_EvenOutOfOrder()
+    {
+        using TcpClient dcsSide = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected);
+
+        Task<DcsCommandResult> first = _connection.ShowMessageAsync("first");
+        long firstId = JsonDocument.Parse(await ReadLine(dcsSide)).RootElement.GetProperty("id").GetInt64();
+        Task<DcsCommandResult> second = _connection.ShowMessageAsync("second");
+        long secondId = JsonDocument.Parse(await ReadLine(dcsSide)).RootElement.GetProperty("id").GetInt64();
+
+        await Send(dcsSide, CommandResult(secondId, ok: false, error: "second failed"));
+        await Send(dcsSide, CommandResult(firstId, ok: true));
+
+        Assert.True((await first).Ok);
+        Assert.Equal("second failed", (await second).Error);
+    }
+
+    [Fact]
+    public async Task Command_TimesOut_WhenDcsNeverAnswers()
+    {
+        using TcpClient dcsSide = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected);
+
+        DcsCommandResult result = await _connection.ShowMessageAsync("hi");
+
+        Assert.False(result.Ok);
+        Assert.Contains("didn't answer", result.Error);
+    }
+
+    [Fact]
+    public async Task Command_Fails_WhenDcsDisconnectsBeforeAnswering()
+    {
+        Task<DcsCommandResult> sent;
+        using (TcpClient dcsSide = await AcceptAuthenticatedAsync())
+        {
+            await WaitUntil(() => _status.DcsConnected);
+            sent = _connection.ShowMessageAsync("hi");
+            await ReadLine(dcsSide);
+        } // DCS goes away without replying
+
+        DcsCommandResult result = await sent;
+        Assert.False(result.Ok);
+        Assert.Contains("lost", result.Error);
+    }
+
+    [Fact]
+    public async Task Command_Fails_WhenNotConnected()
+    {
+        DcsCommandResult result = await _connection.SendCommandAsync("message", new JsonObject { ["text"] = "hi" });
+
+        Assert.Equal(DcsCommandResult.Failed("DCS isn't connected."), result);
+    }
+
+    [Fact]
+    public async Task CommandText_IsNeverLogged()
+    {
+        using (TcpClient dcsSide = await AcceptAuthenticatedAsync())
+        {
+            await WaitUntil(() => _status.DcsConnected);
+            Task<DcsCommandResult> sent = _connection.ShowMessageAsync("Sentinel Text 4-2");
+            await ReadLine(dcsSide);
+            dcsSide.Close();
+            await sent;
+        }
+        await WaitUntil(() => !_status.DcsConnected);
+
+        Assert.DoesNotContain(_log.Messages, m => m.Contains("Sentinel Text"));
+    }
+
+    private static string CommandResult(long id, bool ok, string? error = null) =>
+        new JsonObject { ["commandResult"] = new JsonObject { ["id"] = id, ["ok"] = ok, ["error"] = error } }.ToJsonString();
 
     // Accepts the app's connection and completes the handshake as a current Hooks script would.
     private async Task<TcpClient> AcceptAuthenticatedAsync()
