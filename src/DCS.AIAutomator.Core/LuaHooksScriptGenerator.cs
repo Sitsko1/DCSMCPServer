@@ -213,42 +213,6 @@ public static class LuaHooksScriptGenerator
                 c.text, seconds))
         end
 
-        -- cmd "listFlights": every AI air group (lead unit's callsign, type, position) as JSON data.
-        -- Runs in mission scripting; strings are JSON-escaped there, numbers in DCS's SI units.
-        local LIST_FLIGHTS_CODE = [==[
-            local function esc(s) return (tostring(s):gsub('[%c"\\]', function(ch) return string.format('\\u%04x', ch:byte()) end)) end
-            local function num(v)
-                if type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge then return string.format("%.6f", v) end
-                return "null"
-            end
-            local out = {}
-            for _, side in ipairs({ 0, 1, 2 }) do
-                for _, category in ipairs({ Group.Category.AIRPLANE, Group.Category.HELICOPTER }) do
-                    for _, g in ipairs(coalition.getGroups(side, category) or {}) do
-                        local lead = g:isExist() and g:getUnit(1)
-                        if lead and lead:isExist() then
-                            local player = false
-                            for _, u in ipairs(g:getUnits() or {}) do
-                                if u:getPlayerName() then player = true end
-                            end
-                            local desc = lead:getDesc() or {}
-                            local p = lead:getPoint()
-                            local lat, lon = coord.LOtoLL(p)
-                            out[#out + 1] = string.format(
-                                '{"group":"%s","callsign":"%s","type":"%s","coalition":%d,"lat":%s,"lon":%s,"altMsl":%s,"player":%s}',
-                                esc(g:getName()), esc(lead:getCallsign() or ""), esc(desc.displayName or lead:getTypeName()),
-                                side, num(lat), num(lon), num(p.y), tostring(player))
-                        end
-                    end
-                end
-            end
-            return "ok [" .. table.concat(out, ",") .. "]"
-        ]==]
-
-        function mcpBridgeCommands.listFlights(c)
-            return mcpBridgeRunInMission(LIST_FLIGHTS_CODE)
-        end
-
         -- One command line: a JSON object with cmd, id and its parameters. Every command with an id gets a commandResult.
         local function mcpBridgeHandleCommand(line)
             local okDecode, command = pcall(function() return net.json2lua(line) end)
@@ -331,6 +295,51 @@ public static class LuaHooksScriptGenerator
                 McpBridge.displayNames[typeName] = display
             end
             return display
+        end
+
+        -- cmd "listFlights": every AI air group (lead unit's callsign, type, position) as JSON data.
+        -- Runs in mission scripting; strings are JSON-escaped there, numbers in DCS's SI units.
+        -- Defined below mcpBridgeDisplayName, which it uses (a Lua local is only visible below it).
+        local LIST_FLIGHTS_CODE = [==[
+            local function esc(s) return (tostring(s):gsub('[%c"\\]', function(ch) return string.format('\\u%04x', ch:byte()) end)) end
+            local function num(v)
+                if type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge then return string.format("%.6f", v) end
+                return "null"
+            end
+            local out = {}
+            for _, side in ipairs({ 0, 1, 2 }) do
+                for _, category in ipairs({ Group.Category.AIRPLANE, Group.Category.HELICOPTER }) do
+                    for _, g in ipairs(coalition.getGroups(side, category) or {}) do
+                        local lead = g:isExist() and g:getUnit(1)
+                        if lead and lead:isExist() then
+                            local player = false
+                            for _, u in ipairs(g:getUnits() or {}) do
+                                if u:getPlayerName() then player = true end
+                            end
+                            local p = lead:getPoint()
+                            local lat, lon = coord.LOtoLL(p)
+                            out[#out + 1] = string.format(
+                                '{"group":"%s","callsign":"%s","type":"%s","coalition":%d,"lat":%s,"lon":%s,"altMsl":%s,"player":%s}',
+                                esc(g:getName()), esc(lead:getCallsign() or ""), esc(lead:getTypeName()),
+                                side, num(lat), num(lon), num(p.y), tostring(player))
+                        end
+                    end
+                end
+            end
+            return "ok [" .. table.concat(out, ",") .. "]"
+        ]==]
+
+        function mcpBridgeCommands.listFlights(c)
+            local ok, err, data = mcpBridgeRunInMission(LIST_FLIGHTS_CODE)
+            if ok and data then
+                -- Mission scripting only has DCS's internal type names ("FA-18C_hornet"); swap in the
+                -- display names the aircraft readout uses ("F/A-18C"). Safe on this JSON: escaped
+                -- string values never contain a bare quote, so this only matches the type fields.
+                data = data:gsub('"type":"([^"]*)"', function(typeName)
+                    return '"type":"' .. mcpBridgeJsonEscape(mcpBridgeDisplayName(typeName)) .. '"'
+                end)
+            end
+            return ok, err, data
         end
 
         -- LoGetMCPState flags that mean something is wrong; its plain state flags are left out.

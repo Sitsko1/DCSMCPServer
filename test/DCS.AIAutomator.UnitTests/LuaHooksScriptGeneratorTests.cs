@@ -169,10 +169,15 @@ public class LuaHooksScriptGeneratorTests
     {
         string handler = FunctionBody("function mcpBridgeCommands.listFlights(c)");
         Assert.Contains("mcpBridgeRunInMission(LIST_FLIGHTS_CODE)", handler);
+        // Display names come from the Hooks side's database lookup, as for the aircraft readout
+        // (mission scripting's getDesc().displayName gave "e-2c hawkeye"-style names live).
+        Assert.Contains("mcpBridgeDisplayName(typeName)", handler);
+        Assert.True(Lua.IndexOf("local function mcpBridgeDisplayName(") < Lua.IndexOf("function mcpBridgeCommands.listFlights("),
+            "listFlights must be defined below mcpBridgeDisplayName, or the local isn't visible to it");
         foreach (string call in new[]
         {
             "coalition.getGroups(side, category)", "Group.Category.AIRPLANE", "Group.Category.HELICOPTER",
-            "lead:getCallsign()", "u:getPlayerName()", "coord.LOtoLL(p)", "desc.displayName",
+            "lead:getCallsign()", "u:getPlayerName()", "coord.LOtoLL(p)", "lead:getTypeName()",
         })
         {
             Assert.Contains(call, Lua);
