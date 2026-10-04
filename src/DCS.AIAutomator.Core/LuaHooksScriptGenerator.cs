@@ -176,17 +176,20 @@ public static class LuaHooksScriptGenerator
             end
         end
 
-        -- Runs `code` in the mission scripting environment through the mission state's a_do_script
-        -- (net.dostring_in, which DCS allows only with the autoexec.cfg lines the app adds on
-        -- deploy). `code` is built by a handler below from validated, %q-quoted values, never taken
-        -- from the app, and must return "ok" or an error message.
+        -- Runs `code` in the mission scripting environment (net.dostring_in "scripting", which DCS
+        -- allows only with the autoexec.cfg lines the app adds on deploy). `code` is built by a
+        -- handler below from validated, %q-quoted values, never taken from the app, and must return
+        -- "ok" or an error message. Verified live: dostring_in returns (result, success), and nothing
+        -- at all when the target isn't allowed. The mission state's a_do_script is no substitute:
+        -- it runs code there but drops its return value.
         local function mcpBridgeRunInMission(code)
             if not McpBridge.missionRunning then return false, "no mission is running" end
             if not (net and net.dostring_in) then return false, MISSION_SCRIPTING_DISABLED end
-            local okCall, result = pcall(net.dostring_in, "mission", string.format("return a_do_script(%q)", code))
+            local okCall, result, success = pcall(net.dostring_in, "scripting", code)
             if not okCall then return false, MISSION_SCRIPTING_DISABLED .. " (" .. tostring(result) .. ")" end
+            if result == nil then return false, MISSION_SCRIPTING_DISABLED end
+            if success == false then return false, "mission script error: " .. tostring(result) end
             if result == "ok" then return true end
-            if result == nil or result == "" then return false, MISSION_SCRIPTING_DISABLED end
             return false, tostring(result)
         end
 

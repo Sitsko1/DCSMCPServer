@@ -191,15 +191,18 @@ handler validates its own parameters, and an unknown `cmd` gets an error reply. 
 `DcsCommands` + a `ProtocolVersion` bump.** Never add a "run this Lua" command.
 
 Handlers that need mission scripting (`trigger.*`, `Group.*`) build their code themselves,
-quoting values with `%q`, and run it with `net.dostring_in("mission", "return a_do_script(...)")`.
-That code must return `"ok"` or an error message. DCS allows `dostring_in` only when
+quoting values with `%q`, and run it with `net.dostring_in("scripting", code)`. That code must
+return `"ok"` or an error message. DCS allows `dostring_in` only when
 `Saved Games\DCS\Config\autoexec.cfg` has `net.allow_unsafe_api` ∋ `"userhooks"` and
-`net.allow_dostring_in` ∋ `"mission"` (`Sim_ControlAPI.md`). **Deploy** offers to add exactly that
+`net.allow_dostring_in` ∋ `"scripting"` (`Sim_ControlAPI.md`). **Deploy** offers to add exactly that
 (`AutoexecConfig`), with a consent dialog: it appends to existing lists rather than replacing
 them, keeps a `.bak`, and is idempotent. Declining still deploys. Mission commands then fail
 with "mission scripting isn't enabled". Commands outside a mission get "no mission is running".
-Unverified live: what `dostring_in` returns on DCS's side for a non-allowed state (the script
-treats an error, `nil` or `""` as "not enabled").
+Verified live (probes in a running mission): `dostring_in` returns `result, success`; a target
+that autoexec doesn't allow returns **nothing** ("not enabled"); a script error comes back as the
+result with `success == false`. **Don't use `a_do_script`** (the docs' suggestion, via the
+`"mission"` target): it runs the code but drops its return value, so success can't be confirmed.
+The appended (`list[#list + 1] = ...`) autoexec form is honoured.
 
 **Check every DCS API call against the stock docs before using it** —
 `DCS World/API/Sim_ControlAPI.md` (Hooks: `Sim.*`, callbacks, which `Export.Lo*` calls work

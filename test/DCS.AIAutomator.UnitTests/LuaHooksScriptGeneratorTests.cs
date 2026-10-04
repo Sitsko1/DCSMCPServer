@@ -158,8 +158,9 @@ public class LuaHooksScriptGeneratorTests
         string handler = FunctionBody("function mcpBridgeCommands.message(c)");
         Assert.Contains("type(c.text) ~= \"string\"", handler); // validated
         Assert.Contains("trigger.action.outText(%q, %d)", handler); // %q-quoted, never spliced in raw
-        Assert.Contains("net.dostring_in, \"mission\"", Lua);
-        Assert.Contains("return a_do_script(%q)", Lua);
+        // Directly in the scripting state: a_do_script (via "mission") drops return values (verified live).
+        Assert.Contains("pcall(net.dostring_in, \"scripting\", code)", Lua);
+        Assert.DoesNotContain("a_do_script(", Lua);
         Assert.Contains($"local MAX_MESSAGE_SECONDS = {DcsCommands.MaxMessageSeconds}", Lua);
     }
 
@@ -169,6 +170,7 @@ public class LuaHooksScriptGeneratorTests
         string run = FunctionBody("local function mcpBridgeRunInMission(code)");
         Assert.Contains("MISSION_SCRIPTING_DISABLED", run);
         Assert.Contains("\"no mission is running\"", run);
+        Assert.Contains("success == false", run); // dostring_in's second return value flags a script error
     }
 
     [Fact]
