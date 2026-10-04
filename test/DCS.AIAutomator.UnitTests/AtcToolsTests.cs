@@ -1,49 +1,51 @@
-
 public class AtcToolsTests
 {
+    private readonly FakeDcsConnection _connection = new();
+
     [Fact]
-    public void SendAtcInstruction_FormatsExpectedLuaCommand()
+    public async Task SendAtcInstruction_SendsAMessageCommand_WithTheInstructionAsData()
     {
-        var connection = new FakeDcsConnection();
-        var tools = new AtcTools(connection);
+        await new AtcTools(_connection).SendAtcInstruction("Enfield 1-1", AtcAction.Vectors, heading: 270);
 
-        tools.SendAtcInstruction("Enfield 1-1", AtcAction.Vectors, heading: 270);
-
-        Assert.Equal(
-            "trigger.action.outText(\"ATC to Enfield 1-1: Perform Vectors fly heading 270\", 10)\n",
-            connection.LastLuaCommand);
+        Assert.Equal("message", _connection.LastCmd);
+        Assert.Equal("ATC to Enfield 1-1: vectors, fly heading 270", (string?)_connection.LastArgs!["text"]);
+        Assert.Equal(AtcTools.MessageSeconds, (int?)_connection.LastArgs["seconds"]);
     }
 
     [Fact]
-    public void SendAtcInstruction_DefaultsHeadingTo360()
+    public async Task SendAtcInstruction_DefaultsHeadingTo360()
     {
-        var connection = new FakeDcsConnection();
-        var tools = new AtcTools(connection);
+        await new AtcTools(_connection).SendAtcInstruction("Enfield 1-1", AtcAction.Hold);
 
-        tools.SendAtcInstruction("Enfield 1-1", AtcAction.Hold);
-
-        Assert.Contains("fly heading 360", connection.LastLuaCommand);
+        Assert.EndsWith("fly heading 360", (string?)_connection.LastArgs!["text"]);
     }
 
     [Fact]
-    public void SendAtcInstruction_ReturnsSuccessMessage_WhenConnectionSucceeds()
+    public async Task SendAtcInstruction_PassesHostileCallsignsThroughAsPlainText()
     {
-        var connection = new FakeDcsConnection { ShouldSucceed = true };
-        var tools = new AtcTools(connection);
+        // Was Lua injection (#4): the callsign went into Lua source. Now it's only ever JSON data.
+        const string callsign = "x\", 10) os.exit() --\n\\";
 
-        string result = tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
+        await new AtcTools(_connection).SendAtcInstruction(callsign, AtcAction.Orbit);
 
-        Assert.Equal("ATC instruction broadcasted successfully.", result);
+        Assert.StartsWith($"ATC to {callsign}:", (string?)_connection.LastArgs!["text"]);
     }
 
     [Fact]
-    public void SendAtcInstruction_ReturnsErrorMessage_WhenConnectionFails()
+    public async Task SendAtcInstruction_ReportsSuccess_OnlyWhenDcsConfirms()
     {
-        var connection = new FakeDcsConnection { ShouldSucceed = false };
-        var tools = new AtcTools(connection);
+        string result = await new AtcTools(_connection).SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
 
-        string result = tools.SendAtcInstruction("Enfield 1-1", AtcAction.Orbit);
+        Assert.Equal("Shown on screen in DCS: \"ATC to Enfield 1-1: cleared to land, fly heading 360\"", result);
+    }
 
-        Assert.Equal("Error: DCS interface is down.", result);
+    [Fact]
+    public async Task SendAtcInstruction_ReportsDcsReason_WhenItFails()
+    {
+        _connection.Result = DcsCommandResult.Failed("mission scripting isn't enabled");
+
+        string result = await new AtcTools(_connection).SendAtcInstruction("Enfield 1-1", AtcAction.Orbit);
+
+        Assert.Equal("Error: DCS didn't show the instruction: mission scripting isn't enabled", result);
     }
 }

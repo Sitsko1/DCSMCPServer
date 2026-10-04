@@ -1,12 +1,15 @@
+using System.Text.Json.Nodes;
 
 public class FakeDcsConnection : IDcsConnection
 {
-    public bool ShouldSucceed { get; set; } = true;
-    public string? LastLuaCommand { get; private set; }
+    public DcsCommandResult Result { get; set; } = new(true);
+    public string? LastCmd { get; private set; }
+    public JsonObject? LastArgs { get; private set; }
 
-    public bool SendLuaCommand(string luaCode)
+    public Task<DcsCommandResult> SendCommandAsync(string cmd, JsonObject args, CancellationToken cancellationToken = default)
     {
-        LastLuaCommand = luaCode;
-        return ShouldSucceed;
+        LastCmd = cmd;
+        LastArgs = args;
+        return Task.FromResult(Result);
     }
 }

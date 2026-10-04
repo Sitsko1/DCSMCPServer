@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 1;
+    public const int ProtocolVersion = 2;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -50,9 +50,11 @@ public static class LuaHooksScriptGenerator
         local LINK_SECRET = "{{dcsLinkSecret}}" -- the app's first line must be "AUTH <secret>"
         local PROTOCOL_VERSION = {{ProtocolVersion}} -- wire contract version, checked by the app at handshake
         local AUTH_TIMEOUT = 2 -- seconds a new client gets to authenticate before it's dropped
+        local MAX_MESSAGE_SECONDS = {{DcsCommands.MaxMessageSeconds}}
+        local MISSION_SCRIPTING_DISABLED = "mission scripting isn't enabled for DCS.AIAutomator: redeploy the Lua scripts, allow mission scripting when asked, and restart DCS"
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
-            authenticated = false, clientSince = nil,
+            authenticated = false, clientSince = nil, missionRunning = false,
             missionName = "Unknown", terrain = "Unknown", displayNames = {}, lastSent = -1, lastHeartbeat = -1,
             logBuffer = {}, logLastSent = {}, logLastSentCount = 0,
         }
@@ -165,6 +167,68 @@ public static class LuaHooksScriptGenerator
             end
         end
 
+        local function mcpBridgeSendCommandResult(id, ok, err)
+            if ok then
+                mcpBridgeSendLine(string.format('{"commandResult":{"id":%d,"ok":true}', id) .. "}")
+            else
+                mcpBridgeSendLine(string.format('{"commandResult":{"id":%d,"ok":false,"error":"%s"}', id,
+                    mcpBridgeJsonEscape(err or "command failed")) .. "}")
+            end
+        end
+
+        -- Runs `code` in the mission scripting environment (net.dostring_in "scripting", which DCS
+        -- allows only with the autoexec.cfg lines the app adds on deploy). `code` is built by a
+        -- handler below from validated, %q-quoted values, never taken from the app, and must return
+        -- "ok" or an error message. Verified live: dostring_in returns (result, success), and nothing
+        -- at all when the target isn't allowed. The mission state's a_do_script is no substitute:
+        -- it runs code there but drops its return value.
+        local function mcpBridgeRunInMission(code)
+            if not McpBridge.missionRunning then return false, "no mission is running" end
+            if not (net and net.dostring_in) then return false, MISSION_SCRIPTING_DISABLED end
+            local okCall, result, success = pcall(net.dostring_in, "scripting", code)
+            if not okCall then return false, MISSION_SCRIPTING_DISABLED .. " (" .. tostring(result) .. ")" end
+            if result == nil then return false, MISSION_SCRIPTING_DISABLED end
+            if success == false then return false, "mission script error: " .. tostring(result) end
+            if result == "ok" then return true end
+            return false, tostring(result)
+        end
+
+        -- The only things the app can ask for. Each handler validates its own parameters and
+        -- returns ok, errorMessage. Nothing the app sends is ever run as Lua.
+        local mcpBridgeCommands = {}
+
+        -- cmd "message" (text, seconds): an on-screen message to the player.
+        function mcpBridgeCommands.message(c)
+            if type(c.text) ~= "string" or c.text == "" then return false, "text must be a non-empty string" end
+            local seconds = math.floor(tonumber(c.seconds) or 10)
+            if seconds < 1 or seconds > MAX_MESSAGE_SECONDS then
+                return false, "seconds must be between 1 and " .. MAX_MESSAGE_SECONDS
+            end
+            return mcpBridgeRunInMission(string.format(
+                'local ok, err = pcall(function() trigger.action.outText(%q, %d) end) if ok then return "ok" end return tostring(err)',
+                c.text, seconds))
+        end
+
+        -- One command line: a JSON object with cmd, id and its parameters. Every command with an id gets a commandResult.
+        local function mcpBridgeHandleCommand(line)
+            local okDecode, command = pcall(function() return net.json2lua(line) end)
+            if not okDecode or type(command) ~= "table" or type(command.id) ~= "number" then
+                mcpBridgeLog("error", "ignored a malformed command line") -- never log the line itself
+                return
+            end
+            local handler = type(command.cmd) == "string" and mcpBridgeCommands[command.cmd] or nil
+            if handler == nil then
+                mcpBridgeSendCommandResult(command.id, false, "unknown command: " .. tostring(command.cmd))
+                return
+            end
+            local okRun, ok, err = pcall(handler, command)
+            if not okRun then
+                err = "command failed: " .. tostring(ok)
+                ok = false
+            end
+            mcpBridgeSendCommandResult(command.id, ok == true, err)
+        end
+
         local function mcpBridgeReadCommands()
             if McpBridge.client == nil then return end
             while true do
@@ -182,13 +246,7 @@ public static class LuaHooksScriptGenerator
                         break
                     end
                 elseif line then
-                    local fn, compileErr = loadstring(line)
-                    if fn then
-                        local ok, runErr = pcall(fn)
-                        if not ok then mcpBridgeLog("error", "command error: " .. tostring(runErr)) end
-                    else
-                        mcpBridgeLog("error", "command parse error: " .. tostring(compileErr))
-                    end
+                    mcpBridgeHandleCommand(line)
                 elseif err == "closed" then
                     mcpBridgeDropClient()
                     break
@@ -314,6 +372,7 @@ public static class LuaHooksScriptGenerator
 
         function mcpBridgeCallbacks.onSimulationStart()
             McpBridge.lastSent, McpBridge.lastHeartbeat = -1, -1
+            McpBridge.missionRunning = true
             local ok, err = pcall(mcpBridgeCacheMission)
             if not ok then mcpBridgeLog("error", "start error: " .. tostring(err)) end
         end
@@ -338,6 +397,7 @@ public static class LuaHooksScriptGenerator
         -- The socket stays open between missions (this script lives as long as DCS does); just
         -- tell the app the mission ended so it clears the readout.
         function mcpBridgeCallbacks.onSimulationStop()
+            McpBridge.missionRunning = false
             pcall(mcpBridgeSendLine, '{"missionActive":false}')
         end
 

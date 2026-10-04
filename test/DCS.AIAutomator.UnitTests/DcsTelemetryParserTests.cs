@@ -23,6 +23,25 @@ public class DcsTelemetryParserTests
     }
 
     [Fact]
+    public void TryParse_CommandResults_CarryIdAndOutcome_AndAreNotMissionReports()
+    {
+        DcsTelemetryParser.TryParse(DcsWireSamples.CommandOk, out DcsLine? ok);
+        DcsTelemetryParser.TryParse(DcsWireSamples.CommandFailed, out DcsLine? failed);
+
+        Assert.False(ok!.IsMissionReport);
+        Assert.Equal((7L, new DcsCommandResult(true)), ok.CommandResult);
+        Assert.Equal((8L, DcsCommandResult.Failed("no mission is running")), failed!.CommandResult);
+    }
+
+    [Fact]
+    public void TryParse_CommandResultWithoutAnId_IsIgnored()
+    {
+        DcsTelemetryParser.TryParse("""{"commandResult":{"ok":true}}""", out DcsLine? parsed);
+
+        Assert.Null(parsed!.CommandResult);
+    }
+
+    [Fact]
     public void TryParse_AuthOk_CarriesTheProtocolVersion()
     {
         DcsTelemetryParser.TryParse(DcsWireSamples.AuthOk, out DcsLine? parsed);

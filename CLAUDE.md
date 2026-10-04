@@ -72,8 +72,9 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     `WithHttpTransport`, `WithTools<...>`, `MapMcp("/mcp")`), with the bearer check, the
     tool-call logging filter and client-activity recording. Exposes `Status`.
   - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
-    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Depends on
-    `IDcsConnection` so tests use `FakeDcsConnection`.
+    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Shows the instruction
+    on screen through `DcsCommands.ShowMessageAsync` and reports DCS's actual result; AI
+    tasking comes in #29–#31. Depends on `IDcsConnection` so tests use `FakeDcsConnection`.
   - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
     `BridgeStatus` only (never the connection).
   - `McpStdioRelay` — Claude Desktop's stdio ↔ HTTP pipe (#15, below).
@@ -175,6 +176,34 @@ are kept in sync by hand. Two things catch drift (#21):
   the samples' keys and the C# DTOs' `[JsonPropertyName]`s are the same set. A new field or
   message means a new sample, or that test fails. It checks names only, not types or nesting.
 
+### Commands: structured, never Lua (#27)
+
+The app never sends Lua. `IDcsConnection.SendCommandAsync(cmd, args)` writes one JSON line
+(`{"cmd":"message","id":7,"text":"...","seconds":10}`) and waits for the script's
+`{"commandResult":{"id":7,"ok":true}}` or `{..."ok":false,"error":"..."}`. Replies are matched
+by id (they can arrive out of order). No connection, a timeout (`DefaultCommandTimeout`, 5 s:
+paused, hung or in the menus), a disconnect, or `ok:false` all come back as a failed
+`DcsCommandResult`, never as success. Command bodies are never logged.
+
+In the script, `net.json2lua` decodes the line and `mcpBridgeCommands[cmd]` handles it. Each
+handler validates its own parameters, and an unknown `cmd` gets an error reply. There's no
+`loadstring`. **Adding a capability = a handler in the generator + a typed method in
+`DcsCommands` + a `ProtocolVersion` bump.** Never add a "run this Lua" command.
+
+Handlers that need mission scripting (`trigger.*`, `Group.*`) build their code themselves,
+quoting values with `%q`, and run it with `net.dostring_in("scripting", code)`. That code must
+return `"ok"` or an error message. DCS allows `dostring_in` only when
+`Saved Games\DCS\Config\autoexec.cfg` has `net.allow_unsafe_api` ∋ `"userhooks"` and
+`net.allow_dostring_in` ∋ `"scripting"` (`Sim_ControlAPI.md`). **Deploy** offers to add exactly that
+(`AutoexecConfig`), with a consent dialog: it appends to existing lists rather than replacing
+them, keeps a `.bak`, and is idempotent. Declining still deploys. Mission commands then fail
+with "mission scripting isn't enabled". Commands outside a mission get "no mission is running".
+Verified live (probes in a running mission): `dostring_in` returns `result, success`; a target
+that autoexec doesn't allow returns **nothing** ("not enabled"); a script error comes back as the
+result with `success == false`. **Don't use `a_do_script`** (the docs' suggestion, via the
+`"mission"` target): it runs the code but drops its return value, so success can't be confirmed.
+The appended (`list[#list + 1] = ...`) autoexec form is honoured.
+
 **Check every DCS API call against the stock docs before using it** —
 `DCS World/API/Sim_ControlAPI.md` (Hooks: `Sim.*`, callbacks, which `Export.Lo*` calls work
 there) and `DCS World/Scripts/Export.lua` (the `Lo*` list). The script once relied on
@@ -266,11 +295,11 @@ every Export call as `Export.Lo*`. DCS loads `Scripts/Hooks/*.lua` itself **at s
 chaining with DCS-BIOS/Tacview/etc. `local Sim = Sim or DCS` covers older DCS versions.
 
 `DcsConnection` connects *out*, so the script listens: a non-blocking LuaSocket server, polled
-from `onSimulationFrame` (accept, `loadstring()`-execute queued commands, write one telemetry
-line). `onSimulationStart` caches mission name/map; `onSimulationStop` sends
-`missionActive:false`. The socket stays open between missions since the script lives as long
-as DCS. Commands therefore run in the **GUI** Lua state — not the Export or mission-scripting
-state.
+from `onSimulationFrame` (accept, dispatch queued commands, write one telemetry line).
+`onSimulationStart` caches mission name/map; `onSimulationStop` sends `missionActive:false`.
+The socket stays open between missions since the script lives as long as DCS. Commands are
+handled in the **GUI** Lua state; handlers that need the mission reach it through
+`net.dostring_in` (see Commands above).
 
 `LuaScriptDeployer` writes the Hooks script, and migrates installs from earlier versions: it
 removes our `dofile(...)` lines from `Export.lua` (other tools' lines untouched, `.bak` kept)
@@ -279,8 +308,8 @@ Idempotent: nothing to migrate + identical script → "Already deployed", writes
 
 Verified against a live DCS session (single-player, F/A-18C quick-start): the Hooks script
 deploys, DCS listens, the app connects, and the readout shows the correct mission name, map
-and aircraft display name. Still unverified live: `send_atc_instruction` via a real MCP client
-(and it's known broken — see issue #4).
+and aircraft display name. Still unverified live: `send_atc_instruction` showing its message
+in DCS (#27 live check).
 
 The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
 must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a
@@ -345,7 +374,7 @@ fails the build.
   loggers, so one file has everything. Core sees only `Microsoft.Extensions.Logging`.
   Without a provider (tests) the host falls back to `AddDebug()`. Never add `AddConsole()` — a
   GUI-subsystem app has no console. Use structured templates (`"{Tool}"`), not interpolation.
-  **Never log secrets, tool arguments, or Lua command bodies** — the tool-call filter logs only
+  **Never log secrets, tool arguments, or command bodies** — the tool-call filter logs only
   name/outcome/duration, and an integration test asserts arguments never reach the log. DCS
   Hooks-script errors are forwarded as `{"log":{...}}` lines (rate-limited per message in Lua),
   logged under the `DCS` category, and raised as `BridgeStatus.DcsScriptError` for a toast.

@@ -128,9 +128,10 @@ public sealed partial class SettingsWindow : Window
         return folder?.Path;
     }
 
-    private void OnDeployClicked(object sender, RoutedEventArgs e)
+    private async void OnDeployClicked(object sender, RoutedEventArgs e)
     {
-        var result = LuaScriptDeployer.Deploy(SavedGamesPathBox.Text, DcsHostBox.Text, (int)DcsPortBox.Value,
+        string savedGamesPath = SavedGamesPathBox.Text;
+        var result = LuaScriptDeployer.Deploy(savedGamesPath, DcsHostBox.Text, (int)DcsPortBox.Value,
             ((App)Application.Current).DcsLinkSecret);
         if (result.Success)
             _log.LogInformation("Lua scripts deployed: {DeployResult}", result.Message);
@@ -141,6 +142,47 @@ public sealed partial class SettingsWindow : Window
             result.Success ? "Lua scripts deployed" : "Lua deploy failed",
             result.Message,
             result.Success ? NotificationSeverity.Success : NotificationSeverity.Error);
+
+        if (result.Success) await OfferMissionScriptingAsync(savedGamesPath);
+    }
+
+    /// <summary>
+    /// Messages and AI tasking run in DCS's mission scripting environment, which a Hooks script
+    /// can only reach once autoexec.cfg allows it. That's a DCS security setting, so it's only
+    /// changed with consent; declining leaves those commands returning a clear error.
+    /// </summary>
+    private async Task OfferMissionScriptingAsync(string savedGamesPath)
+    {
+        if (AutoexecConfig.IsEnabled(savedGamesPath)) return;
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = RootGrid.ActualTheme,
+            Title = "Allow mission scripting?",
+            Content = "To show ATC messages in DCS (and later task AI flights), the Hooks script needs DCS's " +
+                      "net.dostring_in API, which DCS only enables through Config\\autoexec.cfg.\n\n" +
+                      "This adds two settings to that file, keeping everything already in it (a .bak copy is made). " +
+                      "They also let any other Hooks script you've installed run code in missions.\n\n" +
+                      "Without them, DCS still connects and reports aircraft state, but messages fail with an error.",
+            PrimaryButtonText = "Allow",
+            CloseButtonText = "Not now",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        try
+        {
+            AutoexecConfig.Enable(savedGamesPath);
+            _log.LogInformation("Mission scripting enabled in autoexec.cfg");
+            _notifications.Show("Mission scripting allowed", "Restart DCS to apply it.", NotificationSeverity.Success);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Couldn't update autoexec.cfg");
+            _notifications.Show("Couldn't update autoexec.cfg", ex.Message, NotificationSeverity.Error);
+        }
     }
 
     private static App CurrentApp => (App)Application.Current;

@@ -185,7 +185,7 @@ public class McpServerIntegrationTests : IAsyncLifetime
 
         // No real DCS instance is listening on 127.0.0.1:1025 in the test environment — this is
         // the correct, expected response, not a failure.
-        Assert.Equal("Error: DCS interface is down.", resultText);
+        Assert.Equal("Error: DCS didn't show the instruction: DCS isn't connected.", resultText);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class McpServerIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ToolArguments_AreNeverLogged()
     {
-        // Tool arguments are user/LLM free text that ends up in Lua sent to DCS (see #4) —
+        // Tool arguments are user/LLM free text that ends up in commands sent to DCS —
         // they must not land in log files.
         await _client.CallToolAsync("send_atc_instruction", new Dictionary<string, object?>
         {

@@ -1,15 +1,44 @@
+using System.Text.Json.Nodes;
+
 namespace DCS.AIAutomator.Core;
 
 /// <summary>
-/// The DCS-facing side of a tool: send raw Lua to be executed inside DCS World.
-/// Exists so tool classes (e.g. AtcTools) can be unit tested against a fake, without a real
-/// DCS instance or TCP socket.
+/// The DCS-facing side of a tool: send a structured command to the Hooks script and wait for
+/// its result. Exists so tool classes (e.g. AtcTools) can be unit tested against a fake, without
+/// a real DCS instance or TCP socket.
 /// </summary>
 public interface IDcsConnection
 {
     /// <summary>
-    /// Directly pushes raw Lua code over the socket to be executed inside DCS.
-    /// Returns false if there is no live connection or the write fails.
+    /// Sends <c>{"cmd":<paramref name="cmd"/>,"id":..., ...args}</c> and waits for the script's
+    /// matching <c>commandResult</c>. Never throws for DCS-side problems: no connection, a
+    /// timeout, a disconnect or a rejected command all come back as a failed result.
     /// </summary>
-    bool SendLuaCommand(string luaCode);
+    Task<DcsCommandResult> SendCommandAsync(string cmd, JsonObject args, CancellationToken cancellationToken = default);
+}
+
+/// <param name="Ok">DCS ran the command.</param>
+/// <param name="Error">Why it didn't (from DCS, or the app's own reason such as a timeout).</param>
+public sealed record DcsCommandResult(bool Ok, string? Error = null)
+{
+    public static DcsCommandResult Failed(string error) => new(false, error);
+}
+
+/// <summary>
+/// One typed method per command the Hooks script handles (its <c>mcpBridgeCommands</c> table).
+/// Adding a capability means a handler there and a method here — never Lua sent over the link.
+/// </summary>
+public static class DcsCommands
+{
+    /// <summary>Longest an on-screen message may stay up; the script enforces the same range.</summary>
+    public const int MaxMessageSeconds = 60;
+
+    /// <summary>Shows <paramref name="text"/> to the player on screen (mission scripting's outText).</summary>
+    public static Task<DcsCommandResult> ShowMessageAsync(
+        this IDcsConnection connection, string text, int seconds = 10, CancellationToken cancellationToken = default) =>
+        connection.SendCommandAsync("message", new JsonObject
+        {
+            ["text"] = text,
+            ["seconds"] = Math.Clamp(seconds, 1, MaxMessageSeconds),
+        }, cancellationToken);
 }

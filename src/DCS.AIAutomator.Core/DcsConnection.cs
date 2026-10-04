@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -7,7 +9,7 @@ namespace DCS.AIAutomator.Core;
 
 /// <summary>
 /// Owns the persistent TCP connection to the DCS Hooks script's socket. Registered as both a
-/// singleton (so tool classes can inject it to send Lua) and a hosted service (so its connect
+/// singleton (so tool classes can inject it to send commands) and a hosted service (so its connect
 /// loop runs for the app's lifetime) — see DcsScriptingServiceCollectionExtensions.
 /// </summary>
 public sealed class DcsConnection : BackgroundService, IDcsConnection
@@ -24,12 +26,22 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     private NetworkStream? _stream;
     private volatile bool _authenticated; // the Hooks script accepted our link secret on this connection
     private long _lastLineTicks = Environment.TickCount64; // written by the read loop, read by the watchdog
+    private readonly TimeSpan _commandTimeout;
+    private readonly SemaphoreSlim _writeLock = new(1, 1); // tools send concurrently; lines must not interleave
+    private long _nextCommandId;
+    private readonly ConcurrentDictionary<long, TaskCompletionSource<DcsCommandResult>> _pendingCommands = new();
 
     /// <summary>
     /// How long a connected, mid-mission, unpaused DCS may stay silent before it's reported as
     /// not responding. The Hooks script heartbeats ~1/s, so this tolerates a few missed beats.
     /// </summary>
     public static readonly TimeSpan DefaultNotRespondingTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// How long a command waits for its result. The script drains commands every frame, so a live
+    /// DCS answers within a frame or two; silence this long means it's paused, hung or in the menus.
+    /// </summary>
+    public static readonly TimeSpan DefaultCommandTimeout = TimeSpan.FromSeconds(5);
 
     public DcsConnection(
         ILogger<DcsConnection> logger,
@@ -38,7 +50,8 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         int dcsPort = 1024,
         string dcsLinkSecret = "",
         TimeSpan? notRespondingTimeout = null,
-        ILogger? dcsScriptLogger = null)
+        ILogger? dcsScriptLogger = null,
+        TimeSpan? commandTimeout = null)
     {
         if (!Secrets.IsWellFormed(dcsLinkSecret))
         {
@@ -51,25 +64,43 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         _dcsIp = dcsIp;
         _dcsPort = dcsPort;
         _notRespondingTimeout = notRespondingTimeout ?? DefaultNotRespondingTimeout;
+        _commandTimeout = commandTimeout ?? DefaultCommandTimeout;
     }
 
-    /// <summary>
-    /// Directly pushes raw Lua code over the socket to be executed inside DCS.
-    /// </summary>
-    public bool SendLuaCommand(string luaCode)
+    public async Task<DcsCommandResult> SendCommandAsync(string cmd, JsonObject args, CancellationToken cancellationToken = default)
     {
-        if (_client == null || !_client.Connected || _stream == null || !_authenticated) return false;
+        NetworkStream? stream = _stream;
+        if (stream is null || !_authenticated) return DcsCommandResult.Failed("DCS isn't connected.");
+
+        long id = Interlocked.Increment(ref _nextCommandId);
+        var reply = new TaskCompletionSource<DcsCommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCommands[id] = reply;
         try
         {
-            if (!luaCode.EndsWith("\n")) luaCode += "\n";
-            byte[] bytes = Encoding.UTF8.GetBytes(luaCode);
-            _stream.Write(bytes, 0, bytes.Length);
-            return true;
+            // cmd and id set last, so an args key can't override them. Never logged (may carry user text).
+            JsonObject command = args.DeepClone().AsObject();
+            command["cmd"] = cmd;
+            command["id"] = id;
+            byte[] line = Encoding.UTF8.GetBytes(command.ToJsonString() + "\n");
+
+            await _writeLock.WaitAsync(cancellationToken);
+            try { await stream.WriteAsync(line, cancellationToken); }
+            finally { _writeLock.Release(); }
+
+            return await reply.Task.WaitAsync(_commandTimeout, cancellationToken);
         }
-        catch (Exception ex)
+        catch (TimeoutException)
         {
-            _logger.LogError(ex, "Failed to write Lua command to DCS stream socket.");
-            return false;
+            return DcsCommandResult.Failed($"DCS didn't answer within {_commandTimeout.TotalSeconds:0.#} s (paused, hung or in the menus?).");
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or SocketException)
+        {
+            _logger.LogWarning("Failed to send a {Command} command to DCS: {Reason}", cmd, ex.Message);
+            return DcsCommandResult.Failed("Lost the connection to DCS while sending.");
+        }
+        finally
+        {
+            _pendingCommands.TryRemove(id, out _);
         }
     }
 
@@ -131,6 +162,9 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                     }
                     if (parsed.Paused is bool paused) _status.DcsPaused = paused;
                     if (parsed.Log is { } entry) ForwardScriptLog(entry);
+                    // A reply nobody waits for any more (it timed out) is dropped.
+                    if (parsed.CommandResult is (long id, DcsCommandResult result) && _pendingCommands.TryGetValue(id, out var waiter))
+                        waiter.TrySetResult(result);
                 }
 
                 // ReadLineAsync returned null: DCS closed the connection (e.g. the process was
@@ -223,6 +257,9 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     private void CleanConnection()
     {
         _authenticated = false;
+        // Commands in flight will never get a reply on a new connection.
+        foreach (var waiter in _pendingCommands.Values)
+            waiter.TrySetResult(DcsCommandResult.Failed("The connection to DCS was lost before it answered."));
         _stream?.Dispose();
         _client?.Dispose();
         _client = null;
