@@ -188,6 +188,28 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_Vector_TasksTheGroupAlongATrueCourse_FromTheMagneticHeading()
+    {
+        string handler = FunctionBody("function mcpBridgeCommands.vector(c)");
+        Assert.Contains("type(c.group) ~= \"string\"", handler); // validated
+        Assert.Contains("heading < 0 or heading > 360", handler);
+        Assert.Contains("alt < MIN_VECTOR_ALTITUDE or alt > MAX_VECTOR_ALTITUDE", handler);
+        Assert.Contains("(heading + (variation or 0)) % 360", handler); // magnetic -> true
+        Assert.Contains($"local MIN_VECTOR_ALTITUDE, MAX_VECTOR_ALTITUDE = {DcsCommands.MinVectorAltitudeMeters}, {DcsCommands.MaxVectorAltitudeMeters}", Lua);
+
+        string variation = FunctionBody("local function mcpBridgeMagneticVariation()");
+        Assert.Contains("Export.LoGetSelfData()", variation);
+        Assert.Contains("Export.LoGetMagneticYaw()", variation);
+
+        // The mission-scripting side: group by name (%q-quoted), players refused, route ahead.
+        Assert.Contains("local g = Group.getByName(%q)", Lua);
+        Assert.Contains("u:getPlayerName() then return \"a player is in this group", Lua);
+        Assert.Contains("g:getController():setTask({ id = \"Mission\"", Lua);
+        Assert.Contains("alt_type = \"BARO\"", Lua);
+        Assert.Contains("'ok {\"altMsl\":%%.1f,\"variation\":%s}'", Lua); // %% survives the outer format
+    }
+
+    [Fact]
     public void Generate_ReportsMissionScriptingNotEnabled_InsteadOfFailingSilently()
     {
         string run = FunctionBody("local function mcpBridgeRunInMission(code)");

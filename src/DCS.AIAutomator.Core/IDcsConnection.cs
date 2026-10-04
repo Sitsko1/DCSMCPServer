@@ -35,6 +35,9 @@ public static class DcsCommands
     /// <summary>Longest an on-screen message may stay up; the script enforces the same range.</summary>
     public const int MaxMessageSeconds = 60;
 
+    /// <summary>Altitude range a vector accepts, meters MSL (100 ft to 66,000 ft); the script enforces the same.</summary>
+    public const int MinVectorAltitudeMeters = 30, MaxVectorAltitudeMeters = 20000;
+
     /// <summary>Shows <paramref name="text"/> to the player on screen (mission scripting's outText).</summary>
     public static Task<DcsCommandResult> ShowMessageAsync(
         this IDcsConnection connection, string text, int seconds = 10, CancellationToken cancellationToken = default) =>
@@ -43,6 +46,29 @@ public static class DcsCommands
             ["text"] = text,
             ["seconds"] = Math.Clamp(seconds, 1, MaxMessageSeconds),
         }, cancellationToken);
+
+    /// <summary>
+    /// Turns an AI group onto a magnetic heading (degrees, 0-360) at an altitude in meters MSL
+    /// (null = its current altitude). DCS refuses groups with a player in them.
+    /// </summary>
+    public static async Task<(DcsCommandResult Result, VectorResult? Vector)> VectorAsync(
+        this IDcsConnection connection, string groupName, double headingDegrees, double? altitudeMeters,
+        CancellationToken cancellationToken = default)
+    {
+        var args = new JsonObject { ["group"] = groupName, ["heading"] = headingDegrees };
+        if (altitudeMeters is double alt) args["altitude"] = alt;
+        DcsCommandResult result = await connection.SendCommandAsync("vector", args, cancellationToken);
+        if (!result.Ok) return (result, null);
+        try
+        {
+            VectorResultTelemetry? t = result.Data?.Deserialize(DcsTelemetryJsonContext.Default.VectorResultTelemetry);
+            return (result, new VectorResult(t?.AltMsl, t?.Variation));
+        }
+        catch (JsonException)
+        {
+            return (result, new VectorResult(null, null)); // tasked; only the details are unreadable
+        }
+    }
 
     /// <summary>Every AI air group (aircraft and helicopters) in the running mission.</summary>
     public static async Task<(DcsCommandResult Result, IReadOnlyList<AiFlight> Flights)> ListFlightsAsync(

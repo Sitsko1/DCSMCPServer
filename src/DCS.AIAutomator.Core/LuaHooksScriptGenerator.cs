@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 3;
+    public const int ProtocolVersion = 4;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -51,6 +51,7 @@ public static class LuaHooksScriptGenerator
         local PROTOCOL_VERSION = {{ProtocolVersion}} -- wire contract version, checked by the app at handshake
         local AUTH_TIMEOUT = 2 -- seconds a new client gets to authenticate before it's dropped
         local MAX_MESSAGE_SECONDS = {{DcsCommands.MaxMessageSeconds}}
+        local MIN_VECTOR_ALTITUDE, MAX_VECTOR_ALTITUDE = {{DcsCommands.MinVectorAltitudeMeters}}, {{DcsCommands.MaxVectorAltitudeMeters}} -- meters MSL
         local MISSION_SCRIPTING_DISABLED = "mission scripting isn't enabled for DCS.AIAutomator: redeploy the Lua scripts, allow mission scripting when asked, and restart DCS"
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
@@ -340,6 +341,65 @@ public static class LuaHooksScriptGenerator
                 end)
             end
             return ok, err, data
+        end
+
+        -- Local magnetic variation in degrees (true minus magnetic heading of the player's aircraft),
+        -- or nil without a player aircraft. ATC headings are magnetic; DCS routes are map (true) courses.
+        local function mcpBridgeMagneticVariation()
+            local self_ = mcpBridgeCall(function() return Export.LoGetSelfData() end)
+            local magnetic = mcpBridgeCall(function() return Export.LoGetMagneticYaw() end)
+            if type(self_) ~= "table" or type(self_.Heading) ~= "number" or type(magnetic) ~= "number" then return nil end
+            local v = math.deg(self_.Heading - magnetic) % 360
+            if v > 180 then v = v - 360 end
+            return v
+        end
+
+        -- cmd "vector" (group, heading, altitude): turns an AI group onto a heading with a 200 km
+        -- route straight ahead, at an altitude in meters MSL (absent = its current altitude), keeping
+        -- its current speed. Replaces the group's mission, so the vector holds until told otherwise.
+        -- Arguments (outer string.format): group name twice, altitude, true course, variation.
+        local VECTOR_CODE = [==[
+            local g = Group.getByName(%q)
+            if g == nil or not g:isExist() then return "no group named " .. %q end
+            local lead = g:getUnit(1)
+            if lead == nil or not lead:isExist() then return "the group has no live aircraft" end
+            for _, u in ipairs(g:getUnits() or {}) do
+                if u:getPlayerName() then return "a player is in this group, and players can't be tasked" end
+            end
+            local p = lead:getPoint()
+            local alt = %s
+            if alt == nil then alt = p.y end
+            local course = math.rad(%.4f)
+            local v = lead:getVelocity()
+            local speed = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+            if speed < 50 then speed = 200 end
+            local function point(x, z)
+                return { type = "Turning Point", action = "Turning Point", x = x, y = z, alt = alt, alt_type = "BARO", speed = speed }
+            end
+            local d = 200000
+            g:getController():setTask({ id = "Mission", params = { route = { points = {
+                point(p.x, p.z),
+                point(p.x + d * math.cos(course), p.z + d * math.sin(course)),
+            } } } })
+            return string.format('ok {"altMsl":%%.1f,"variation":%s}', alt)
+        ]==]
+
+        function mcpBridgeCommands.vector(c)
+            if type(c.group) ~= "string" or c.group == "" then return false, "group must be a non-empty string" end
+            local heading = tonumber(c.heading)
+            if heading == nil or heading < 0 or heading > 360 then return false, "heading must be between 0 and 360" end
+            local alt = nil
+            if c.altitude ~= nil then
+                alt = tonumber(c.altitude)
+                if alt == nil or alt < MIN_VECTOR_ALTITUDE or alt > MAX_VECTOR_ALTITUDE then
+                    return false, "altitude must be between " .. MIN_VECTOR_ALTITUDE .. " and " .. MAX_VECTOR_ALTITUDE .. " m"
+                end
+            end
+            local variation = mcpBridgeMagneticVariation()
+            local course = (heading + (variation or 0)) % 360
+            return mcpBridgeRunInMission(string.format(VECTOR_CODE, c.group, c.group,
+                alt and string.format("%.1f", alt) or "nil", course,
+                variation and string.format("%.2f", variation) or "null"))
         end
 
         -- LoGetMCPState flags that mean something is wrong; its plain state flags are left out.

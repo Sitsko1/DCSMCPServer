@@ -76,6 +76,42 @@ public class FlightToolsTests
         Assert.Equal("Error: couldn't list AI flights: DCS sent a flight list the app couldn't read.", await List());
     }
 
+    private static readonly AiFlight[] Mission =
+    [
+        new("Enfield-1", "Enfield 1-1", "F/A-18C", "blue", 1, 2, 3, false),
+        new("Player #001", "Colt 1-1", "F/A-18C", "blue", 1, 2, 3, true),
+        new("Player", "Colt 1-1", "F/A-18C", "blue", 1, 2, 3, false),
+    ];
+
+    [Theory]
+    [InlineData("Enfield 1-1", "Enfield-1")]
+    [InlineData("enfield11", "Enfield-1")] // DCS's raw form, any case
+    [InlineData("Player", "Player")] // an exact group name wins over a shared callsign
+    [InlineData(" player #001 ", "Player #001")]
+    public void Resolve_FindsByGroupNameOrCallsign(string name, string group) =>
+        Assert.Equal(group, AiFlight.Resolve(Mission, name).Flight!.GroupName);
+
+    [Fact]
+    public void Resolve_ASharedCallsign_IsAnError_NamingTheGroups()
+    {
+        var (flight, error) = AiFlight.Resolve(Mission, "Colt 1-1");
+
+        Assert.Null(flight);
+        Assert.Equal("Callsign Colt 1-1 is shared by several flights: group \"Player #001\", group \"Player\". Use the group name instead.", error);
+    }
+
+    [Fact]
+    public void Resolve_NoMatch_ListsCandidates_CappedAtTen()
+    {
+        AiFlight[] many = Enumerable.Range(1, 12).Select(i => new AiFlight($"G{i}", $"Uzi {i}-1", "F-16C", "blue", 0, 0, 0, false)).ToArray();
+
+        string error = AiFlight.Resolve(many, "Enfield 1-1").Error!;
+
+        Assert.StartsWith("No flight called \"Enfield 1-1\". Known flights: Uzi 1-1 (group \"G1\"),", error);
+        Assert.EndsWith(", and 2 more (see list_ai_flights).", error);
+        Assert.Equal("No flight called \"x\". There are no AI flights in the mission.", AiFlight.Resolve([], "x").Error);
+    }
+
     [Theory]
     [InlineData("Enfield11", "Enfield 1-1")]
     [InlineData("Springfield34", "Springfield 3-4")]

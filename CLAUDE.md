@@ -72,9 +72,17 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     `WithHttpTransport`, `WithTools<...>`, `MapMcp("/mcp")`), with the bearer check, the
     tool-call logging filter and client-activity recording. Exposes `Status`.
   - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
-    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Shows the instruction
-    on screen through `DcsCommands.ShowMessageAsync` and reports DCS's actual result; AI
-    tasking comes in #29–#31. Depends on `IDcsConnection` so tests use `FakeDcsConnection`.
+    (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Every instruction is
+    shown on screen (`DcsCommands.ShowMessageAsync`). **Vectors** (#29) also tasks the flight:
+    `AiFlight.Resolve` finds it among `ListFlightsAsync`'s flights (exact group name first, then
+    callsign in any form; a shared callsign or no match is an error listing candidates). Then
+    `VectorAsync` sets a 200 km route on the heading, at an altitude given in the user's units
+    (converted to meters here) or the current one. The player's own flight is never tasked,
+    only messaged. ATC headings are **magnetic**: the script converts them to a true course with
+    the variation measured at the player's aircraft (`LoGetSelfData().Heading` minus
+    `LoGetMagneticYaw()`), and without a player aircraft says it flew the heading as true. Hold,
+    Orbit and ClearToLand are message-only until #30/#31. Depends on `IDcsConnection` and
+    `BridgeStatus` (units), so tests use `FakeDcsConnection` (per-command `Responses`).
   - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
     `BridgeStatus` only (never the connection).
   - `FlightTools` — MCP tool `list_ai_flights` (#28): AI air groups from
