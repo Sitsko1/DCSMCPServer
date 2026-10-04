@@ -65,8 +65,8 @@ public sealed class BridgeStatus
 
     private bool _dcsAuthFailed;
     /// <summary>
-    /// DCS's Hooks script rejected the app's link secret, or is an older script that doesn't do
-    /// the handshake at all. Either way the fix is "redeploy Lua scripts". Survives the reconnect
+    /// DCS's Hooks script rejected the app's link secret; the fix is "redeploy Lua scripts".
+    /// Survives the reconnect
     /// loop (each retry fails the same way); cleared by a successful handshake or when DCS can't
     /// be reached at all.
     /// </summary>
@@ -77,6 +77,23 @@ public sealed class BridgeStatus
         {
             if (_dcsAuthFailed == value) return;
             _dcsAuthFailed = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private bool _dcsScriptOutdated;
+    /// <summary>
+    /// DCS's Hooks script speaks another wire contract version than this app (or predates
+    /// versioning, or even the auth handshake), so the app won't stay connected to it; the fix is
+    /// "redeploy Lua scripts, restart DCS". Cleared like <see cref="DcsAuthFailed"/>.
+    /// </summary>
+    public bool DcsScriptOutdated
+    {
+        get => _dcsScriptOutdated;
+        set
+        {
+            if (_dcsScriptOutdated == value) return;
+            _dcsScriptOutdated = value;
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }

@@ -140,7 +140,7 @@ public class LuaHooksScriptGeneratorTests
     {
         Assert.Contains("local LINK_SECRET = \"TestLinkSecret_0123456789\"", Lua);
         Assert.Contains("\"AUTH \" .. LINK_SECRET", Lua);
-        Assert.Contains("{\"authOk\":true}", Lua);
+        Assert.Contains("{\"authOk\":true,", Lua); // plus the protocol version, see DcsWireContractTests
         Assert.Contains("{\"authError\":true}", Lua);
     }
 

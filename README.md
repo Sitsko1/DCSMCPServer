@@ -50,7 +50,8 @@ rejected for an old or wrong key; reconnect it in Settings → AI agents.
 
 **Connecting DCS:** Settings → DCS Integration → **Deploy Lua scripts**, then restart DCS. The
 deployed script holds a secret shared with this app, and DCS only talks to an app that knows it.
-If the DCS indicator shows **AUTH FAILED**, redeploy and restart DCS.
+If the DCS indicator shows **AUTH FAILED** or **SCRIPT OUTDATED** (the deployed script is from
+another version of this app), redeploy and restart DCS.
 
 `dotnet run --project src/DCS.AIAutomator -p:Platform=x64` doesn't reliably work for this app —
 see the `dotnet run` gotcha in `CLAUDE.md` if you hit `COMException 0x80040154

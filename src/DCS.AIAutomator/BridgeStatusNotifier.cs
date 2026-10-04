@@ -9,7 +9,7 @@ namespace DCS.AIAutomator;
 /// status object exposes a single coarse <see cref="BridgeStatus.Changed"/> event, so this class
 /// tracks the previous value of each observable and raises a notification only on an actual
 /// transition (bridge start/stop/fault, DCS connect/disconnect, DCS not responding/recovered,
-/// an AI agent rejected for a wrong API key,
+/// DCS script rejected or outdated, an AI agent rejected for a wrong API key,
 /// mission start). Pause/resume deliberately raise nothing — the annunciator shows it.
 /// </summary>
 public sealed class BridgeStatusNotifier
@@ -21,6 +21,7 @@ public sealed class BridgeStatusNotifier
     private bool _lastDcsConnected;
     private bool _lastDcsNotResponding;
     private bool _lastDcsAuthFailed;
+    private bool _lastDcsScriptOutdated;
     private bool _lastClientAuthFailed;
     private string? _lastMissionName;
 
@@ -38,6 +39,7 @@ public sealed class BridgeStatusNotifier
         _lastDcsConnected = status.DcsConnected;
         _lastDcsNotResponding = status.DcsNotResponding;
         _lastDcsAuthFailed = status.DcsAuthFailed;
+        _lastDcsScriptOutdated = status.DcsScriptOutdated;
         _lastMissionName = status.CurrentMission?.MissionName;
 
         status.Changed += OnStatusChanged;
@@ -113,7 +115,18 @@ public sealed class BridgeStatusNotifier
             if (_status.DcsAuthFailed)
             {
                 _notifications.Show("DCS rejected the connection",
-                    "DCS's Lua script doesn't match this app's link secret (or predates it). Redeploy the Lua scripts (Settings → DCS Integration) and restart DCS.",
+                    "DCS's Lua script doesn't match this app's link secret. Redeploy the Lua scripts (Settings → DCS Integration) and restart DCS.",
+                    NotificationSeverity.Error);
+            }
+        }
+
+        if (_status.DcsScriptOutdated != _lastDcsScriptOutdated)
+        {
+            _lastDcsScriptOutdated = _status.DcsScriptOutdated;
+            if (_status.DcsScriptOutdated)
+            {
+                _notifications.Show("DCS script outdated",
+                    "DCS's Lua script is from another version of this app. Redeploy the Lua scripts (Settings → DCS Integration) and restart DCS.",
                     NotificationSeverity.Error);
             }
         }

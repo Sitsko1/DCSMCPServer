@@ -128,9 +128,10 @@ public sealed partial class MainWindow : Window
     private void RenderDcs()
     {
         // Not responding = connected but DCS has gone silent mid-mission (hung); paused is quiet.
-        // Auth failure wins: the retry loop keeps reconnecting, and the fix is user action.
+        // Auth/version failures win: the retry loop keeps reconnecting, and the fix is user action.
         var (color, label) =
             _status.DcsAuthFailed ? (FaultColor, "AUTH FAILED")
+            : _status.DcsScriptOutdated ? (FaultColor, "SCRIPT OUTDATED")
             : !_status.DcsConnected ? (IdleColor, "DISCONNECTED")
             : _status.DcsNotResponding ? (WarningColor, "NOT RESPONDING")
             : _status.DcsPaused ? (IdleColor, "PAUSED")
@@ -139,7 +140,7 @@ public sealed partial class MainWindow : Window
         DcsLamp.Background = new SolidColorBrush(color);
         DcsStateText.Text = label;
         DcsStateText.Foreground = new SolidColorBrush(color);
-        DcsAddressText.Text = _status.DcsAuthFailed ? "Redeploy Lua scripts, restart DCS" : _status.DcsEndpoint;
+        DcsAddressText.Text = _status.DcsAuthFailed || _status.DcsScriptOutdated ? "Redeploy Lua scripts, restart DCS" : _status.DcsEndpoint;
     }
 
     private void RenderClients()
