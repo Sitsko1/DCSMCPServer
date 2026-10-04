@@ -34,6 +34,17 @@ public class DcsTelemetryParserTests
     }
 
     [Fact]
+    public void TryParse_CommandResultData_IsKept()
+    {
+        DcsTelemetryParser.TryParse(DcsWireSamples.CommandWithData, out DcsLine? parsed);
+
+        var (id, result) = parsed!.CommandResult!.Value;
+        Assert.Equal(9, id);
+        Assert.True(result.Ok);
+        Assert.Equal("Enfield-1", result.Data!.Value[0].GetProperty("group").GetString());
+    }
+
+    [Fact]
     public void TryParse_CommandResultWithoutAnId_IsIgnored()
     {
         DcsTelemetryParser.TryParse("""{"commandResult":{"ok":true}}""", out DcsLine? parsed);

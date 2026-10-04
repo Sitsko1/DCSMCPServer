@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 2;
+    public const int ProtocolVersion = 3;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -167,8 +167,11 @@ public static class LuaHooksScriptGenerator
             end
         end
 
-        local function mcpBridgeSendCommandResult(id, ok, err)
-            if ok then
+        -- `data`, if given, is JSON text a query handler built (e.g. listFlights' array).
+        local function mcpBridgeSendCommandResult(id, ok, err, data)
+            if ok and data then
+                mcpBridgeSendLine(string.format('{"commandResult":{"id":%d,"ok":true,"data":', id) .. data .. "}" .. "}")
+            elseif ok then
                 mcpBridgeSendLine(string.format('{"commandResult":{"id":%d,"ok":true}', id) .. "}")
             else
                 mcpBridgeSendLine(string.format('{"commandResult":{"id":%d,"ok":false,"error":"%s"}', id,
@@ -179,7 +182,7 @@ public static class LuaHooksScriptGenerator
         -- Runs `code` in the mission scripting environment (net.dostring_in "scripting", which DCS
         -- allows only with the autoexec.cfg lines the app adds on deploy). `code` is built by a
         -- handler below from validated, %q-quoted values, never taken from the app, and must return
-        -- "ok" or an error message. Verified live: dostring_in returns (result, success), and nothing
+        -- "ok", "ok " followed by JSON data (query commands), or an error message. Verified live: dostring_in returns (result, success), and nothing
         -- at all when the target isn't allowed. The mission state's a_do_script is no substitute:
         -- it runs code there but drops its return value.
         local function mcpBridgeRunInMission(code)
@@ -190,6 +193,7 @@ public static class LuaHooksScriptGenerator
             if result == nil then return false, MISSION_SCRIPTING_DISABLED end
             if success == false then return false, "mission script error: " .. tostring(result) end
             if result == "ok" then return true end
+            if type(result) == "string" and result:sub(1, 3) == "ok " then return true, nil, result:sub(4) end
             return false, tostring(result)
         end
 
@@ -221,12 +225,12 @@ public static class LuaHooksScriptGenerator
                 mcpBridgeSendCommandResult(command.id, false, "unknown command: " .. tostring(command.cmd))
                 return
             end
-            local okRun, ok, err = pcall(handler, command)
+            local okRun, ok, err, data = pcall(handler, command)
             if not okRun then
                 err = "command failed: " .. tostring(ok)
                 ok = false
             end
-            mcpBridgeSendCommandResult(command.id, ok == true, err)
+            mcpBridgeSendCommandResult(command.id, ok == true, err, data)
         end
 
         local function mcpBridgeReadCommands()
@@ -291,6 +295,51 @@ public static class LuaHooksScriptGenerator
                 McpBridge.displayNames[typeName] = display
             end
             return display
+        end
+
+        -- cmd "listFlights": every AI air group (lead unit's callsign, type, position) as JSON data.
+        -- Runs in mission scripting; strings are JSON-escaped there, numbers in DCS's SI units.
+        -- Defined below mcpBridgeDisplayName, which it uses (a Lua local is only visible below it).
+        local LIST_FLIGHTS_CODE = [==[
+            local function esc(s) return (tostring(s):gsub('[%c"\\]', function(ch) return string.format('\\u%04x', ch:byte()) end)) end
+            local function num(v)
+                if type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge then return string.format("%.6f", v) end
+                return "null"
+            end
+            local out = {}
+            for _, side in ipairs({ 0, 1, 2 }) do
+                for _, category in ipairs({ Group.Category.AIRPLANE, Group.Category.HELICOPTER }) do
+                    for _, g in ipairs(coalition.getGroups(side, category) or {}) do
+                        local lead = g:isExist() and g:getUnit(1)
+                        if lead and lead:isExist() then
+                            local player = false
+                            for _, u in ipairs(g:getUnits() or {}) do
+                                if u:getPlayerName() then player = true end
+                            end
+                            local p = lead:getPoint()
+                            local lat, lon = coord.LOtoLL(p)
+                            out[#out + 1] = string.format(
+                                '{"group":"%s","callsign":"%s","type":"%s","coalition":%d,"lat":%s,"lon":%s,"altMsl":%s,"player":%s}',
+                                esc(g:getName()), esc(lead:getCallsign() or ""), esc(lead:getTypeName()),
+                                side, num(lat), num(lon), num(p.y), tostring(player))
+                        end
+                    end
+                end
+            end
+            return "ok [" .. table.concat(out, ",") .. "]"
+        ]==]
+
+        function mcpBridgeCommands.listFlights(c)
+            local ok, err, data = mcpBridgeRunInMission(LIST_FLIGHTS_CODE)
+            if ok and data then
+                -- Mission scripting only has DCS's internal type names ("FA-18C_hornet"); swap in the
+                -- display names the aircraft readout uses ("F/A-18C"). Safe on this JSON: escaped
+                -- string values never contain a bare quote, so this only matches the type fields.
+                data = data:gsub('"type":"([^"]*)"', function(typeName)
+                    return '"type":"' .. mcpBridgeJsonEscape(mcpBridgeDisplayName(typeName)) .. '"'
+                end)
+            end
+            return ok, err, data
         end
 
         -- LoGetMCPState flags that mean something is wrong; its plain state flags are left out.
