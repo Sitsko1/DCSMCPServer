@@ -24,13 +24,14 @@ public static class DcsWireSamples
     public static readonly string AuthOk = $$"""{"authOk":true,"protocol":{{LuaHooksScriptGenerator.ProtocolVersion}}}""";
     public const string AuthError = """{"authError":true}""";
     public const string CommandOk = """{"commandResult":{"id":7,"ok":true}}""";
+    public const string CommandWithData = """{"commandResult":{"id":9,"ok":true,"data":[{"group":"Enfield-1","callsign":"Enfield11","type":"F/A-18C","coalition":2,"lat":41.7,"lon":41.7,"altMsl":4572.0,"player":false}]}}""";
     public const string CommandFailed = """{"commandResult":{"id":8,"ok":false,"error":"no mission is running"}}""";
 
     public static IEnumerable<string> All =>
     [
         MissionWithOwnship, MissionWithOwnshipNoFailures, MissionWithOwnshipFailuresNotReported,
         MissionWithoutOwnship, MissionEnded, Heartbeat, Paused, Resumed, Log, AuthOk, AuthError,
-        CommandOk, CommandFailed,
+        CommandOk, CommandWithData, CommandFailed,
     ];
 
     public static TheoryData<string> AllLines => new(All);
@@ -81,6 +82,10 @@ public class DcsWireContractTests
 
         static void Collect(JsonElement e, SortedSet<string> keys)
         {
+            if (e.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in e.EnumerateArray()) Collect(item, keys);
+            }
             if (e.ValueKind != JsonValueKind.Object) return;
             foreach (JsonProperty p in e.EnumerateObject())
             {
@@ -91,7 +96,7 @@ public class DcsWireContractTests
     }
 
     private static SortedSet<string> DtoKeys() =>
-        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry), typeof(DcsCommandResultTelemetry) }
+        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry), typeof(DcsCommandResultTelemetry), typeof(AiFlightTelemetry) }
             .SelectMany(t => t.GetProperties())
             .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name));
 }

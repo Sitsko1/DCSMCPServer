@@ -191,6 +191,7 @@ public class DcsConnectionTests : IAsyncLifetime
     [InlineData("""{"authOk":true}""")] // deployed before protocol versioning
     [InlineData("""{"authOk":true,"protocol":0}""")]
     [InlineData("""{"authOk":true,"protocol":1}""")] // before structured commands (#27)
+    [InlineData("""{"authOk":true,"protocol":2}""")] // before command result data (#28)
     [InlineData("""{"authOk":true,"protocol":999}""")]
     public async Task AuthOkWithAnotherProtocolVersion_IsScriptOutdated_NotConnected(string reply)
     {
@@ -262,6 +263,22 @@ public class DcsConnectionTests : IAsyncLifetime
 
         await Send(dcsSide, CommandResult(command.GetProperty("id").GetInt64(), ok: true));
         Assert.True((await sent).Ok);
+    }
+
+    [Fact]
+    public async Task ListFlights_ReturnsTheFlightsInTheResultData()
+    {
+        using TcpClient dcsSide = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected);
+
+        var sent = _connection.ListFlightsAsync();
+        JsonElement command = JsonDocument.Parse(await ReadLine(dcsSide)).RootElement;
+        Assert.Equal("listFlights", command.GetProperty("cmd").GetString());
+        await Send(dcsSide, DcsWireSamples.CommandWithData.Replace("\"id\":9", $"\"id\":{command.GetProperty("id").GetInt64()}"));
+
+        var (result, flights) = await sent;
+        Assert.True(result.Ok);
+        Assert.Equal(new AiFlight("Enfield-1", "Enfield 1-1", "F/A-18C", "blue", 41.7, 41.7, 4572.0, false), Assert.Single(flights));
     }
 
     [Fact]

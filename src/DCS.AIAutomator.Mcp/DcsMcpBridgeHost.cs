@@ -100,6 +100,7 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
                 .WithHttpTransport(o => o.Stateless = true)
                 .WithTools<AtcTools>(atcToolSerializerOptions)
                 .WithTools<AircraftTools>()
+                .WithTools<FlightTools>()
                 .WithRequestFilters(filters => filters.AddCallToolFilter(LogToolCall))
                 .WithMessageFilters(filters => filters.AddIncomingFilter(RecordClientActivity));
 

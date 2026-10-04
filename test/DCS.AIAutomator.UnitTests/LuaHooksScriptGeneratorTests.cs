@@ -165,6 +165,24 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_ListFlights_ReturnsAirGroupsAsJsonData_FromMissionScripting()
+    {
+        string handler = FunctionBody("function mcpBridgeCommands.listFlights(c)");
+        Assert.Contains("mcpBridgeRunInMission(LIST_FLIGHTS_CODE)", handler);
+        foreach (string call in new[]
+        {
+            "coalition.getGroups(side, category)", "Group.Category.AIRPLANE", "Group.Category.HELICOPTER",
+            "lead:getCallsign()", "u:getPlayerName()", "coord.LOtoLL(p)", "desc.displayName",
+        })
+        {
+            Assert.Contains(call, Lua);
+        }
+        Assert.Contains("return \"ok [\" .. table.concat(out, \",\") .. \"]\"", Lua);
+        Assert.Contains("result:sub(1, 3) == \"ok \"", Lua); // "ok <json>" = success with data
+        Assert.Contains("{\"commandResult\":{\"id\":%d,\"ok\":true,\"data\":", Lua);
+    }
+
+    [Fact]
     public void Generate_ReportsMissionScriptingNotEnabled_InsteadOfFailingSilently()
     {
         string run = FunctionBody("local function mcpBridgeRunInMission(code)");

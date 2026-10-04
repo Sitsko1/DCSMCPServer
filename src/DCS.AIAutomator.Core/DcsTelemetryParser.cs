@@ -67,6 +67,7 @@ public sealed class DcsCommandResultTelemetry
     [JsonPropertyName("id")] public long? Id { get; set; }
     [JsonPropertyName("ok")] public bool? Ok { get; set; }
     [JsonPropertyName("error")] public string? Error { get; set; }
+    [JsonPropertyName("data")] public JsonElement? Data { get; set; }
 }
 
 public sealed class DcsLogTelemetry
@@ -91,6 +92,7 @@ public sealed class OwnshipTelemetry
 }
 
 [JsonSerializable(typeof(DcsTelemetryMessage))]
+[JsonSerializable(typeof(List<AiFlightTelemetry>))]
 internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 {
 }
@@ -176,7 +178,7 @@ public static class DcsTelemetryParser
         DcsLogEntry? log = message.Log is { Message: { } text } l ? new DcsLogEntry(l.Level ?? "info", text) : null;
         // A reply without an id can't be matched to anything, so it's dropped.
         (long, DcsCommandResult)? commandResult = message.CommandResult is { Id: long id } r
-            ? (id, r.Ok == true ? new DcsCommandResult(true) : DcsCommandResult.Failed(r.Error ?? "DCS rejected the command."))
+            ? (id, r.Ok == true ? new DcsCommandResult(true, Data: r.Data) : DcsCommandResult.Failed(r.Error ?? "DCS rejected the command."))
             : null;
         parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused, log,
             AuthOk: message.AuthOk == true, AuthError: message.AuthError == true, Protocol: message.Protocol,

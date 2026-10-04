@@ -167,6 +167,16 @@ public class McpServerIntegrationTests : IAsyncLifetime
         IList<McpClientTool> tools = await _client.ListToolsAsync();
 
         Assert.Contains(tools, t => t.Name == "send_atc_instruction");
+        Assert.Contains(tools, t => t.Name == "list_ai_flights");
+    }
+
+    [Fact]
+    public async Task CallTool_ListAiFlights_ReportsDcsDown()
+    {
+        CallToolResult result = await _client.CallToolAsync("list_ai_flights", new Dictionary<string, object?>());
+
+        Assert.Equal("Error: couldn't list AI flights: DCS isn't connected.",
+            result.Content.OfType<TextContentBlock>().First().Text);
     }
 
     [Fact]

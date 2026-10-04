@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace DCS.AIAutomator.Core;
@@ -19,7 +20,8 @@ public interface IDcsConnection
 
 /// <param name="Ok">DCS ran the command.</param>
 /// <param name="Error">Why it didn't (from DCS, or the app's own reason such as a timeout).</param>
-public sealed record DcsCommandResult(bool Ok, string? Error = null)
+/// <param name="Data">What a query command returned (e.g. listFlights' array); null for the others.</param>
+public sealed record DcsCommandResult(bool Ok, string? Error = null, JsonElement? Data = null)
 {
     public static DcsCommandResult Failed(string error) => new(false, error);
 }
@@ -41,4 +43,21 @@ public static class DcsCommands
             ["text"] = text,
             ["seconds"] = Math.Clamp(seconds, 1, MaxMessageSeconds),
         }, cancellationToken);
+
+    /// <summary>Every AI air group (aircraft and helicopters) in the running mission.</summary>
+    public static async Task<(DcsCommandResult Result, IReadOnlyList<AiFlight> Flights)> ListFlightsAsync(
+        this IDcsConnection connection, CancellationToken cancellationToken = default)
+    {
+        DcsCommandResult result = await connection.SendCommandAsync("listFlights", new JsonObject(), cancellationToken);
+        if (!result.Ok) return (result, []);
+        try
+        {
+            List<AiFlightTelemetry>? flights = result.Data?.Deserialize(DcsTelemetryJsonContext.Default.ListAiFlightTelemetry);
+            return (result, flights?.Select(AiFlight.From).ToList() ?? []);
+        }
+        catch (JsonException)
+        {
+            return (DcsCommandResult.Failed("DCS sent a flight list the app couldn't read."), []);
+        }
+    }
 }

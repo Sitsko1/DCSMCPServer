@@ -77,6 +77,9 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     tasking comes in #29–#31. Depends on `IDcsConnection` so tests use `FakeDcsConnection`.
   - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
     `BridgeStatus` only (never the connection).
+  - `FlightTools` — MCP tool `list_ai_flights` (#28): AI air groups from
+    `DcsCommands.ListFlightsAsync`, formatted with `AircraftStateFormatter` in the user's units.
+    Callsigns are shown spoken (`AiFlight.SpokenCallsign`: "Enfield11" → "Enfield 1-1").
   - `McpStdioRelay` — Claude Desktop's stdio ↔ HTTP pipe (#15, below).
   - `DcsLogging` — the Serilog pipeline (see Gotchas). Only the app uses it; it lives here so
     tests can reach it.
@@ -192,7 +195,11 @@ handler validates its own parameters, and an unknown `cmd` gets an error reply. 
 
 Handlers that need mission scripting (`trigger.*`, `Group.*`) build their code themselves,
 quoting values with `%q`, and run it with `net.dostring_in("scripting", code)`. That code must
-return `"ok"` or an error message. DCS allows `dostring_in` only when
+return `"ok"`, `"ok "` followed by JSON (a query; it becomes `commandResult.data`, e.g.
+`listFlights`' array), or an error message. Query code builds its JSON by hand and must
+JSON-escape every string (there's no JSON library in mission scripting). Keep its object keys
+literal in the generator, so `DcsWireContractTests` sees them, and add the DTO
+(`AiFlightTelemetry`) to that test's type list. DCS allows `dostring_in` only when
 `Saved Games\DCS\Config\autoexec.cfg` has `net.allow_unsafe_api` ∋ `"userhooks"` and
 `net.allow_dostring_in` ∋ `"scripting"` (`Sim_ControlAPI.md`). **Deploy** offers to add exactly that
 (`AutoexecConfig`), with a consent dialog: it appends to existing lists rather than replacing
