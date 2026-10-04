@@ -25,6 +25,32 @@ public sealed partial record AiFlight(
         return m.Success ? $"{m.Groups[1].Value} {m.Groups[2].Value}-{m.Groups[3].Value}" : raw.Trim();
     }
 
+    /// <summary>
+    /// Finds the flight an instruction is addressed to: an exact group name first (unique in a
+    /// mission), else a callsign in any form ("Enfield 1-1", "Enfield11"). Null with an error
+    /// listing candidates when there's no match or the callsign is shared.
+    /// </summary>
+    public static (AiFlight? Flight, string? Error) Resolve(IReadOnlyList<AiFlight> flights, string name)
+    {
+        string wanted = name.Trim();
+        if (flights.FirstOrDefault(f => f.GroupName.Equals(wanted, StringComparison.OrdinalIgnoreCase)) is { } byGroup)
+            return (byGroup, null);
+
+        string spoken = SpokenCallsign(wanted);
+        List<AiFlight> byCallsign = flights.Where(f => f.Callsign.Equals(spoken, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (byCallsign.Count == 1) return (byCallsign[0], null);
+        if (byCallsign.Count > 1)
+            return (null, $"Callsign {spoken} is shared by several flights: {string.Join(", ", byCallsign.Select(f => $"group \"{f.GroupName}\""))}. Use the group name instead.");
+
+        string known = flights.Count == 0
+            ? "There are no AI flights in the mission."
+            : "Known flights: " + string.Join(", ", flights.Take(MaxCandidates).Select(f => $"{f.Callsign} (group \"{f.GroupName}\")"))
+              + (flights.Count > MaxCandidates ? $", and {flights.Count - MaxCandidates} more (see list_ai_flights)." : ".");
+        return (null, $"No flight called \"{wanted}\". {known}");
+    }
+
+    private const int MaxCandidates = 10;
+
     // DCS's coalition.side values.
     private static string CoalitionName(int? side) => side switch
     {

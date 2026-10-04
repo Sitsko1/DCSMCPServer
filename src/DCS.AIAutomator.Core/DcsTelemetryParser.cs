@@ -93,6 +93,7 @@ public sealed class OwnshipTelemetry
 
 [JsonSerializable(typeof(DcsTelemetryMessage))]
 [JsonSerializable(typeof(List<AiFlightTelemetry>))]
+[JsonSerializable(typeof(VectorResultTelemetry))]
 internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 {
 }

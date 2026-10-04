@@ -195,7 +195,7 @@ public class McpServerIntegrationTests : IAsyncLifetime
 
         // No real DCS instance is listening on 127.0.0.1:1025 in the test environment — this is
         // the correct, expected response, not a failure.
-        Assert.Equal("Error: DCS didn't show the instruction: DCS isn't connected.", resultText);
+        Assert.Equal("Error: couldn't look up the flight: DCS isn't connected.", resultText);
     }
 
     [Fact]
