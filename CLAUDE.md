@@ -78,7 +78,8 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     callsign in any form; a shared callsign or no match is an error listing candidates). Then
     `VectorAsync` sets a 200 km route on the heading, `OrbitAsync` a `Circle` Orbit task over the
     present position, `HoldAsync` a `Race-Track` Orbit task whose `HoldLegMeters` inbound leg ends at
-    the present position on the heading. All take an altitude in the user's units (converted to
+    the present position on the heading (both verified live: the E-2D circled its point, an F/A-18C
+    flew an east-west racetrack at the commanded 5,000 m). All take an altitude in the user's units (converted to
     meters here) or keep the current one. In the script they share one mission-code frame
     (`mcpBridgeTask`: `TASK_CODE_START` .. task body .. `TASK_CODE_END`). The player's own flight is never tasked,
     only messaged. ATC headings are **magnetic**: the script converts them to a true course with
