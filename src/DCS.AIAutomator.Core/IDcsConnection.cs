@@ -35,8 +35,11 @@ public static class DcsCommands
     /// <summary>Longest an on-screen message may stay up; the script enforces the same range.</summary>
     public const int MaxMessageSeconds = 60;
 
-    /// <summary>Altitude range a vector accepts, meters MSL (100 ft to 66,000 ft); the script enforces the same.</summary>
-    public const int MinVectorAltitudeMeters = 30, MaxVectorAltitudeMeters = 20000;
+    /// <summary>Altitude range AI tasking accepts, meters MSL (100 ft to 66,000 ft); the script enforces the same.</summary>
+    public const int MinTaskAltitudeMeters = 30, MaxTaskAltitudeMeters = 20000;
+
+    /// <summary>Length of a hold's racetrack legs, meters (about 5.4 nm).</summary>
+    public const int HoldLegMeters = 10000;
 
     /// <summary>Shows <paramref name="text"/> to the player on screen (mission scripting's outText).</summary>
     public static Task<DcsCommandResult> ShowMessageAsync(
@@ -47,26 +50,44 @@ public static class DcsCommands
             ["seconds"] = Math.Clamp(seconds, 1, MaxMessageSeconds),
         }, cancellationToken);
 
-    /// <summary>
-    /// Turns an AI group onto a magnetic heading (degrees, 0-360) at an altitude in meters MSL
-    /// (null = its current altitude). DCS refuses groups with a player in them.
-    /// </summary>
-    public static async Task<(DcsCommandResult Result, VectorResult? Vector)> VectorAsync(
+    // AI tasking: headings are magnetic degrees (0-360), altitudes meters MSL (null = the group's
+    // current altitude). DCS refuses groups with a player in them.
+
+    /// <summary>Turns an AI group onto a heading.</summary>
+    public static Task<(DcsCommandResult Result, TaskResult? Task)> VectorAsync(
         this IDcsConnection connection, string groupName, double headingDegrees, double? altitudeMeters,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        connection.TaskAsync("vector", groupName, headingDegrees, altitudeMeters, cancellationToken);
+
+    /// <summary>Has an AI group circle over its present position.</summary>
+    public static Task<(DcsCommandResult Result, TaskResult? Task)> OrbitAsync(
+        this IDcsConnection connection, string groupName, double? altitudeMeters,
+        CancellationToken cancellationToken = default) =>
+        connection.TaskAsync("orbit", groupName, null, altitudeMeters, cancellationToken);
+
+    /// <summary>Has an AI group fly a racetrack at its present position, inbound on the heading.</summary>
+    public static Task<(DcsCommandResult Result, TaskResult? Task)> HoldAsync(
+        this IDcsConnection connection, string groupName, double inboundHeadingDegrees, double? altitudeMeters,
+        CancellationToken cancellationToken = default) =>
+        connection.TaskAsync("hold", groupName, inboundHeadingDegrees, altitudeMeters, cancellationToken);
+
+    private static async Task<(DcsCommandResult Result, TaskResult? Task)> TaskAsync(
+        this IDcsConnection connection, string cmd, string groupName, double? headingDegrees, double? altitudeMeters,
+        CancellationToken cancellationToken)
     {
-        var args = new JsonObject { ["group"] = groupName, ["heading"] = headingDegrees };
+        var args = new JsonObject { ["group"] = groupName };
+        if (headingDegrees is double heading) args["heading"] = heading;
         if (altitudeMeters is double alt) args["altitude"] = alt;
-        DcsCommandResult result = await connection.SendCommandAsync("vector", args, cancellationToken);
+        DcsCommandResult result = await connection.SendCommandAsync(cmd, args, cancellationToken);
         if (!result.Ok) return (result, null);
         try
         {
-            VectorResultTelemetry? t = result.Data?.Deserialize(DcsTelemetryJsonContext.Default.VectorResultTelemetry);
-            return (result, new VectorResult(t?.AltMsl, t?.Variation));
+            TaskResultTelemetry? t = result.Data?.Deserialize(DcsTelemetryJsonContext.Default.TaskResultTelemetry);
+            return (result, new TaskResult(t?.AltMsl, t?.Variation));
         }
         catch (JsonException)
         {
-            return (result, new VectorResult(null, null)); // tasked; only the details are unreadable
+            return (result, new TaskResult(null, null)); // tasked; only the details are unreadable
         }
     }
 

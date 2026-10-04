@@ -25,14 +25,14 @@ public static class DcsWireSamples
     public const string AuthError = """{"authError":true}""";
     public const string CommandOk = """{"commandResult":{"id":7,"ok":true}}""";
     public const string CommandWithData = """{"commandResult":{"id":9,"ok":true,"data":[{"group":"Enfield-1","callsign":"Enfield11","type":"F/A-18C","coalition":2,"lat":41.7,"lon":41.7,"altMsl":4572.0,"player":false}]}}""";
-    public const string VectorResult = """{"commandResult":{"id":10,"ok":true,"data":{"altMsl":4572.0,"variation":6.2}}}""";
+    public const string TaskResult = """{"commandResult":{"id":10,"ok":true,"data":{"altMsl":4572.0,"variation":6.2}}}""";
     public const string CommandFailed = """{"commandResult":{"id":8,"ok":false,"error":"no mission is running"}}""";
 
     public static IEnumerable<string> All =>
     [
         MissionWithOwnship, MissionWithOwnshipNoFailures, MissionWithOwnshipFailuresNotReported,
         MissionWithoutOwnship, MissionEnded, Heartbeat, Paused, Resumed, Log, AuthOk, AuthError,
-        CommandOk, CommandWithData, VectorResult, CommandFailed,
+        CommandOk, CommandWithData, TaskResult, CommandFailed,
     ];
 
     public static TheoryData<string> AllLines => new(All);
@@ -97,7 +97,7 @@ public class DcsWireContractTests
     }
 
     private static SortedSet<string> DtoKeys() =>
-        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry), typeof(DcsCommandResultTelemetry), typeof(AiFlightTelemetry), typeof(VectorResultTelemetry) }
+        new(new[] { typeof(DcsTelemetryMessage), typeof(OwnshipTelemetry), typeof(DcsLogTelemetry), typeof(DcsCommandResultTelemetry), typeof(AiFlightTelemetry), typeof(TaskResultTelemetry) }
             .SelectMany(t => t.GetProperties())
             .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name));
 }

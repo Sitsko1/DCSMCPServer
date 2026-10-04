@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 4;
+    public const int ProtocolVersion = 5;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -51,7 +51,7 @@ public static class LuaHooksScriptGenerator
         local PROTOCOL_VERSION = {{ProtocolVersion}} -- wire contract version, checked by the app at handshake
         local AUTH_TIMEOUT = 2 -- seconds a new client gets to authenticate before it's dropped
         local MAX_MESSAGE_SECONDS = {{DcsCommands.MaxMessageSeconds}}
-        local MIN_VECTOR_ALTITUDE, MAX_VECTOR_ALTITUDE = {{DcsCommands.MinVectorAltitudeMeters}}, {{DcsCommands.MaxVectorAltitudeMeters}} -- meters MSL
+        local MIN_TASK_ALTITUDE, MAX_TASK_ALTITUDE = {{DcsCommands.MinTaskAltitudeMeters}}, {{DcsCommands.MaxTaskAltitudeMeters}} -- meters MSL
         local MISSION_SCRIPTING_DISABLED = "mission scripting isn't enabled for DCS.AIAutomator: redeploy the Lua scripts, allow mission scripting when asked, and restart DCS"
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
@@ -354,11 +354,11 @@ public static class LuaHooksScriptGenerator
             return v
         end
 
-        -- cmd "vector" (group, heading, altitude): turns an AI group onto a heading with a 200 km
-        -- route straight ahead, at an altitude in meters MSL (absent = its current altitude), keeping
-        -- its current speed. Replaces the group's mission, so the vector holds until told otherwise.
-        -- Arguments (outer string.format): group name twice, altitude, true course, variation.
-        local VECTOR_CODE = [==[
+        -- AI tasking commands share one mission-scripting frame: find the group, refuse player
+        -- groups, then a task body (below) sets the task. Outer string.format arguments: group name
+        -- twice, altitude in meters MSL (or nil = current), true course in degrees, variation.
+        -- Speed is the group's current one (200 m/s if nearly stopped).
+        local TASK_CODE_START = [==[
             local g = Group.getByName(%q)
             if g == nil or not g:isExist() then return "no group named " .. %q end
             local lead = g:getUnit(1)
@@ -373,34 +373,74 @@ public static class LuaHooksScriptGenerator
             local v = lead:getVelocity()
             local speed = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
             if speed < 50 then speed = 200 end
+            local controller = g:getController()
+        ]==]
+        local TASK_CODE_END = [==[
+            return string.format('ok {"altMsl":%%.1f,"variation":%s}', alt)
+        ]==]
+
+        -- Vectors: a 200 km route straight ahead on the course. Replaces the group's mission, so the
+        -- vector holds until told otherwise.
+        local VECTOR_TASK = [==[
             local function point(x, z)
                 return { type = "Turning Point", action = "Turning Point", x = x, y = z, alt = alt, alt_type = "BARO", speed = speed }
             end
             local d = 200000
-            g:getController():setTask({ id = "Mission", params = { route = { points = {
+            controller:setTask({ id = "Mission", params = { route = { points = {
                 point(p.x, p.z),
                 point(p.x + d * math.cos(course), p.z + d * math.sin(course)),
             } } } })
-            return string.format('ok {"altMsl":%%.1f,"variation":%s}', alt)
         ]==]
 
-        function mcpBridgeCommands.vector(c)
+        -- Orbit: circle over the present position.
+        local ORBIT_TASK = [==[
+            controller:setTask({ id = "Orbit", params = {
+                pattern = "Circle", point = { x = p.x, y = p.z }, altitude = alt, speed = speed,
+            } })
+        ]==]
+
+        -- Hold: a racetrack whose inbound leg ends at the present position (the fix) on the course.
+        local HOLD_TASK = [==[
+            local leg = {{DcsCommands.HoldLegMeters}} -- meters
+            controller:setTask({ id = "Orbit", params = {
+                pattern = "Race-Track",
+                point = { x = p.x - leg * math.cos(course), y = p.z - leg * math.sin(course) },
+                point2 = { x = p.x, y = p.z },
+                altitude = alt, speed = speed,
+            } })
+        ]==]
+
+        -- Validates the shared parameters (group, heading if the task uses one, altitude) and runs
+        -- TASK_CODE_START .. body .. TASK_CODE_END in mission scripting.
+        local function mcpBridgeTask(c, usesHeading, body)
             if type(c.group) ~= "string" or c.group == "" then return false, "group must be a non-empty string" end
-            local heading = tonumber(c.heading)
-            if heading == nil or heading < 0 or heading > 360 then return false, "heading must be between 0 and 360" end
+            local heading = 0
+            if usesHeading then
+                heading = tonumber(c.heading)
+                if heading == nil or heading < 0 or heading > 360 then return false, "heading must be between 0 and 360" end
+            end
             local alt = nil
             if c.altitude ~= nil then
                 alt = tonumber(c.altitude)
-                if alt == nil or alt < MIN_VECTOR_ALTITUDE or alt > MAX_VECTOR_ALTITUDE then
-                    return false, "altitude must be between " .. MIN_VECTOR_ALTITUDE .. " and " .. MAX_VECTOR_ALTITUDE .. " m"
+                if alt == nil or alt < MIN_TASK_ALTITUDE or alt > MAX_TASK_ALTITUDE then
+                    return false, "altitude must be between " .. MIN_TASK_ALTITUDE .. " and " .. MAX_TASK_ALTITUDE .. " m"
                 end
             end
-            local variation = mcpBridgeMagneticVariation()
+            local variation = usesHeading and mcpBridgeMagneticVariation() or nil
             local course = (heading + (variation or 0)) % 360
-            return mcpBridgeRunInMission(string.format(VECTOR_CODE, c.group, c.group,
+            return mcpBridgeRunInMission(string.format(TASK_CODE_START .. body .. TASK_CODE_END, c.group, c.group,
                 alt and string.format("%.1f", alt) or "nil", course,
                 variation and string.format("%.2f", variation) or "null"))
         end
+
+        -- cmd "vector" (group, heading, altitude?): turn onto a magnetic heading.
+        function mcpBridgeCommands.vector(c) return mcpBridgeTask(c, true, VECTOR_TASK) end
+
+        -- cmd "orbit" (group, altitude?): circle over the present position.
+        function mcpBridgeCommands.orbit(c) return mcpBridgeTask(c, false, ORBIT_TASK) end
+
+        -- cmd "hold" (group, heading, altitude?): racetrack at the present position, inbound on the magnetic heading.
+        function mcpBridgeCommands.hold(c) return mcpBridgeTask(c, true, HOLD_TASK) end
 
         -- LoGetMCPState flags that mean something is wrong; its plain state flags are left out.
         local mcpBridgeFailureFlags = {

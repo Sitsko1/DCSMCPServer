@@ -188,14 +188,26 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
-    public void Generate_Vector_TasksTheGroupAlongATrueCourse_FromTheMagneticHeading()
+    public void Generate_Tasking_ValidatesAndConvertsTheMagneticHeading_InOneSharedFrame()
     {
-        string handler = FunctionBody("function mcpBridgeCommands.vector(c)");
-        Assert.Contains("type(c.group) ~= \"string\"", handler); // validated
-        Assert.Contains("heading < 0 or heading > 360", handler);
-        Assert.Contains("alt < MIN_VECTOR_ALTITUDE or alt > MAX_VECTOR_ALTITUDE", handler);
-        Assert.Contains("(heading + (variation or 0)) % 360", handler); // magnetic -> true
-        Assert.Contains($"local MIN_VECTOR_ALTITUDE, MAX_VECTOR_ALTITUDE = {DcsCommands.MinVectorAltitudeMeters}, {DcsCommands.MaxVectorAltitudeMeters}", Lua);
+        string task = FunctionBody("local function mcpBridgeTask(c, usesHeading, body)");
+        Assert.Contains("type(c.group) ~= \"string\"", task); // validated
+        Assert.Contains("heading < 0 or heading > 360", task);
+        Assert.Contains("alt < MIN_TASK_ALTITUDE or alt > MAX_TASK_ALTITUDE", task);
+        Assert.Contains("(heading + (variation or 0)) % 360", task); // magnetic -> true
+        Assert.Contains("usesHeading and mcpBridgeMagneticVariation() or nil", task); // orbit: no variation
+        Assert.Contains("TASK_CODE_START .. body .. TASK_CODE_END", task);
+        Assert.Contains($"local MIN_TASK_ALTITUDE, MAX_TASK_ALTITUDE = {DcsCommands.MinTaskAltitudeMeters}, {DcsCommands.MaxTaskAltitudeMeters}", Lua);
+
+        Assert.Contains("function mcpBridgeCommands.vector(c) return mcpBridgeTask(c, true, VECTOR_TASK) end", Lua);
+        Assert.Contains("function mcpBridgeCommands.orbit(c) return mcpBridgeTask(c, false, ORBIT_TASK) end", Lua);
+        Assert.Contains("function mcpBridgeCommands.hold(c) return mcpBridgeTask(c, true, HOLD_TASK) end", Lua);
+
+        // Orbit and hold use DCS's Orbit task (Scripts/GeneratedTasks: id "Orbit", pattern "Race-Track").
+        Assert.Contains("pattern = \"Circle\", point = { x = p.x, y = p.z }", Lua);
+        Assert.Contains("pattern = \"Race-Track\"", Lua);
+        Assert.Contains("point2 = { x = p.x, y = p.z }", Lua); // the inbound leg ends at the present position
+        Assert.Contains($"local leg = {DcsCommands.HoldLegMeters}", Lua);
 
         string variation = FunctionBody("local function mcpBridgeMagneticVariation()");
         Assert.Contains("Export.LoGetSelfData()", variation);
@@ -204,7 +216,7 @@ public class LuaHooksScriptGeneratorTests
         // The mission-scripting side: group by name (%q-quoted), players refused, route ahead.
         Assert.Contains("local g = Group.getByName(%q)", Lua);
         Assert.Contains("u:getPlayerName() then return \"a player is in this group", Lua);
-        Assert.Contains("g:getController():setTask({ id = \"Mission\"", Lua);
+        Assert.Contains("controller:setTask({ id = \"Mission\"", Lua);
         Assert.Contains("alt_type = \"BARO\"", Lua);
         Assert.Contains("'ok {\"altMsl\":%%.1f,\"variation\":%s}'", Lua); // %% survives the outer format
     }
