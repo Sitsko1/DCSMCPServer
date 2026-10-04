@@ -142,9 +142,10 @@ public class DcsConnectionTests : IAsyncLifetime
         await Task.Delay(Timeout);
         Assert.False(_status.DcsConnected, "not connected until DCS accepts the secret");
 
-        await Send(dcsSide, """{"authOk":true}""");
+        await Send(dcsSide, DcsWireSamples.AuthOk);
         await WaitUntil(() => _status.DcsConnected);
         Assert.False(_status.DcsAuthFailed);
+        Assert.False(_status.DcsScriptOutdated);
     }
 
     [Fact]
@@ -169,16 +170,49 @@ public class DcsConnectionTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DataBeforeAuthOk_FromAnOutdatedScript_IsAuthFailed_AndIgnored()
+    public async Task DataBeforeAuthOk_FromAnOutdatedScript_IsScriptOutdated_AndIgnored()
     {
         // A script deployed before auth existed never answers the AUTH line; it just streams.
         using TcpClient dcsSide = await _fakeDcs.AcceptTcpClientAsync();
         await ReadLine(dcsSide);
         await Send(dcsSide, MissionLine);
 
-        await WaitUntil(() => _status.DcsAuthFailed);
+        await WaitUntil(() => _status.DcsScriptOutdated);
         Assert.False(_status.DcsConnected);
+        Assert.False(_status.DcsAuthFailed);
         Assert.Null(_status.CurrentMission); // unauthenticated data isn't trusted
+    }
+
+    [Theory]
+    [InlineData("""{"authOk":true}""")] // deployed before protocol versioning
+    [InlineData("""{"authOk":true,"protocol":0}""")]
+    [InlineData("""{"authOk":true,"protocol":999}""")]
+    public async Task AuthOkWithAnotherProtocolVersion_IsScriptOutdated_NotConnected(string reply)
+    {
+        using TcpClient dcsSide = await _fakeDcs.AcceptTcpClientAsync();
+        await ReadLine(dcsSide);
+        await Send(dcsSide, reply);
+        await Send(dcsSide, MissionLine);
+
+        await WaitUntil(() => _status.DcsScriptOutdated);
+        await Task.Delay(Timeout);
+        Assert.False(_status.DcsConnected);
+        Assert.Null(_status.CurrentMission); // an outdated script's data isn't used
+        Assert.False(_status.DcsAuthFailed);
+    }
+
+    [Fact]
+    public async Task ScriptOutdated_ClearsOnceDcsSpeaksTheAppsVersion()
+    {
+        using (TcpClient outdated = await _fakeDcs.AcceptTcpClientAsync())
+        {
+            await ReadLine(outdated);
+            await Send(outdated, """{"authOk":true}""");
+            await WaitUntil(() => _status.DcsScriptOutdated);
+        }
+
+        using TcpClient redeployed = await AcceptAuthenticatedAsync();
+        await WaitUntil(() => _status.DcsConnected && !_status.DcsScriptOutdated);
     }
 
     [Fact]
@@ -214,7 +248,7 @@ public class DcsConnectionTests : IAsyncLifetime
     {
         TcpClient dcsSide = await _fakeDcs.AcceptTcpClientAsync();
         Assert.Equal($"AUTH {Secret}", await ReadLine(dcsSide));
-        await Send(dcsSide, """{"authOk":true}""");
+        await Send(dcsSide, DcsWireSamples.AuthOk);
         return dcsSide;
     }
 

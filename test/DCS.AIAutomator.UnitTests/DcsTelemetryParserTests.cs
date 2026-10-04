@@ -15,16 +15,47 @@ public class DcsTelemetryParserTests
     {
         // A heartbeat has no "missionActive", so it must not be read as "no mission" — that would
         // clear the mission readout once a second.
-        bool ok = DcsTelemetryParser.TryParse("""{"heartbeat":true}""", out DcsLine? parsed);
+        bool ok = DcsTelemetryParser.TryParse(DcsWireSamples.Heartbeat, out DcsLine? parsed);
 
         Assert.True(ok);
         Assert.False(parsed!.IsMissionReport);
         Assert.Null(parsed.Paused);
     }
 
+    [Fact]
+    public void TryParse_AuthOk_CarriesTheProtocolVersion()
+    {
+        DcsTelemetryParser.TryParse(DcsWireSamples.AuthOk, out DcsLine? parsed);
+
+        Assert.True(parsed!.AuthOk);
+        Assert.Equal(LuaHooksScriptGenerator.ProtocolVersion, parsed.Protocol);
+    }
+
+    [Fact]
+    public void TryParse_AuthOkFromAScriptThatPredatesVersioning_HasNoProtocol()
+    {
+        DcsTelemetryParser.TryParse("""{"authOk":true}""", out DcsLine? parsed);
+
+        Assert.True(parsed!.AuthOk);
+        Assert.Null(parsed.Protocol);
+    }
+
+    [Fact]
+    public void TryParse_WireSamples_FailuresNullMeansNotReported_EmptyMeansNone()
+    {
+        DcsTelemetryParser.TryParse(DcsWireSamples.MissionWithOwnshipFailuresNotReported, out DcsLine? notReported);
+        DcsTelemetryParser.TryParse(DcsWireSamples.MissionWithOwnshipNoFailures, out DcsLine? none);
+        DcsTelemetryParser.TryParse(DcsWireSamples.MissionWithoutOwnship, out DcsLine? noOwnship);
+
+        Assert.Null(notReported!.Aircraft!.Failures);
+        Assert.Empty(none!.Aircraft!.Failures!);
+        Assert.NotNull(noOwnship!.Mission);
+        Assert.Null(noOwnship.Aircraft);
+    }
+
     [Theory]
     [InlineData("""{"authOk":true}""", true, false)]
-    [InlineData("""{"authError":true}""", false, true)]
+    [InlineData(DcsWireSamples.AuthError, false, true)]
     public void TryParse_AuthReplies_AreRecognized_AndAreNotMissionReports(string line, bool authOk, bool authError)
     {
         DcsTelemetryParser.TryParse(line, out DcsLine? parsed);
@@ -37,18 +68,17 @@ public class DcsTelemetryParserTests
     [Fact]
     public void TryParse_LogLine_CarriesTheEntry_AndIsNotAMissionReport()
     {
-        bool ok = DcsTelemetryParser.TryParse(
-            """{"log":{"level":"error","message":"frame error: attempt to index nil"}}""", out DcsLine? parsed);
+        bool ok = DcsTelemetryParser.TryParse(DcsWireSamples.Log, out DcsLine? parsed);
 
         Assert.True(ok);
         Assert.False(parsed!.IsMissionReport);
         Assert.Equal("error", parsed.Log!.Level);
-        Assert.Equal("frame error: attempt to index nil", parsed.Log.Message);
+        Assert.Equal("frame error: boom", parsed.Log.Message);
     }
 
     [Theory]
-    [InlineData("""{"paused":true}""", true)]
-    [InlineData("""{"paused":false}""", false)]
+    [InlineData(DcsWireSamples.Paused, true)]
+    [InlineData(DcsWireSamples.Resumed, false)]
     public void TryParse_PauseLines_CarryPausedState_AndAreNotMissionReports(string line, bool paused)
     {
         DcsTelemetryParser.TryParse(line, out DcsLine? parsed);

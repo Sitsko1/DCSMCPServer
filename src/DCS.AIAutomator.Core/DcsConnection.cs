@@ -156,7 +156,9 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
                 }
                 if (!tcpConnected)
                 {
-                    _status.DcsAuthFailed = false; // DCS isn't there at all; an old auth failure no longer says anything
+                    // DCS isn't there at all; an old auth/version failure no longer says anything
+                    _status.DcsAuthFailed = false;
+                    _status.DcsScriptOutdated = false;
                 }
                 CleanConnection();
                 try { await Task.Delay(3000, stoppingToken); } catch (TaskCanceledException) { break; }
@@ -174,11 +176,21 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     /// <summary>The first meaningful line on a new connection must be the script's auth reply.</summary>
     private void HandleHandshakeReply(DcsLine reply)
     {
-        if (reply.AuthOk)
+        if (reply.AuthOk && reply.Protocol != LuaHooksScriptGenerator.ProtocolVersion)
+        {
+            // Authenticated, but it speaks another contract: fields would silently go missing or
+            // commands fail. Same treatment as a script without the handshake.
+            FlagScriptOutdated(reply.Protocol is int v
+                ? $"protocol {v}, app expects {LuaHooksScriptGenerator.ProtocolVersion}"
+                : "no protocol version");
+            throw new IOException("DCS's Hooks script speaks another protocol version.");
+        }
+        else if (reply.AuthOk)
         {
             _authenticated = true;
             MarkAlive();
             _status.DcsAuthFailed = false;
+            _status.DcsScriptOutdated = false;
             _status.DcsConnected = true;
             _logger.LogInformation("Connected to DCS at {DcsHost}:{DcsPort}", _dcsIp, _dcsPort);
         }
@@ -191,7 +203,7 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
         {
             // Data without a handshake: a Hooks script deployed before auth existed. Don't trust
             // it, and don't stay connected to it.
-            FlagAuthFailed("DCS's Hooks script is outdated (no auth handshake); redeploy the Lua scripts and restart DCS");
+            FlagScriptOutdated("no auth handshake");
             throw new IOException("DCS sent data without authenticating.");
         }
     }
@@ -200,6 +212,12 @@ public sealed class DcsConnection : BackgroundService, IDcsConnection
     {
         if (!_status.DcsAuthFailed) _logger.LogWarning("DCS link not authenticated: {Reason}", reason); // once, not per retry
         _status.DcsAuthFailed = true;
+    }
+
+    private void FlagScriptOutdated(string reason)
+    {
+        if (!_status.DcsScriptOutdated) _logger.LogWarning("DCS's Hooks script is outdated ({Reason}); redeploy the Lua scripts and restart DCS", reason); // once, not per retry
+        _status.DcsScriptOutdated = true;
     }
 
     private void CleanConnection()

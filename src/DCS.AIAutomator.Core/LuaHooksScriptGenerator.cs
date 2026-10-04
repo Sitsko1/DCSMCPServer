@@ -22,6 +22,12 @@ public static class LuaHooksScriptGenerator
     /// (if DCS still runs frame callbacks then); the app's not-responding timeout is 5 s.</summary>
     public const double HeartbeatIntervalSeconds = 1;
 
+    /// <summary>Version of the wire contract between this script and the app, sent in the
+    /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
+    /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
+    /// script that predates versioning), as an outdated script.</summary>
+    public const int ProtocolVersion = 1;
+
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
     /// characters, since it's embedded in a Lua string literal.</param>
@@ -42,6 +48,7 @@ public static class LuaHooksScriptGenerator
         local TELEMETRY_INTERVAL = {{TelemetryIntervalSeconds.ToString(CultureInfo.InvariantCulture)}} -- seconds between telemetry lines
         local HEARTBEAT_INTERVAL = {{HeartbeatIntervalSeconds.ToString(CultureInfo.InvariantCulture)}} -- seconds between heartbeats (real time)
         local LINK_SECRET = "{{dcsLinkSecret}}" -- the app's first line must be "AUTH <secret>"
+        local PROTOCOL_VERSION = {{ProtocolVersion}} -- wire contract version, checked by the app at handshake
         local AUTH_TIMEOUT = 2 -- seconds a new client gets to authenticate before it's dropped
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
@@ -166,7 +173,7 @@ public static class LuaHooksScriptGenerator
                     -- The first line must be the app's secret; nothing else is executed or answered.
                     if line == "AUTH " .. LINK_SECRET then
                         McpBridge.authenticated = true
-                        mcpBridgeSendRaw('{"authOk":true}')
+                        mcpBridgeSendRaw('{"authOk":true,"protocol":' .. PROTOCOL_VERSION .. '}')
                         mcpBridgeFlushLogBuffer()
                     else
                         mcpBridgeSendRaw('{"authError":true}')

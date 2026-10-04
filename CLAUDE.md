@@ -162,7 +162,18 @@ paused (the `paused` line makes it not matter).
 "Unknown", and unknown fields are ignored. `terrain` arrives as DCS's internal theatre ID and
 the parser maps the non-obvious ones to their product names (`Falklands` → "South Atlantic").
 The generator's Lua `string.format(...)` JSON and `DcsTelemetryMessage`/`DcsTelemetryParser`
-must be kept in sync by hand — nothing enforces it across the language boundary.
+are kept in sync by hand. Two things catch drift (#21):
+- **Protocol version — bump `LuaHooksScriptGenerator.ProtocolVersion` whenever the contract
+  changes** (a field or message added, renamed or removed, either direction). The script sends it
+  in the handshake reply (`{"authOk":true,"protocol":N}`). Any other value, or none (a script
+  that predates versioning, or the handshake itself), sets `BridgeStatus.DcsScriptOutdated` →
+  annunciator **SCRIPT OUTDATED** + "redeploy Lua scripts, restart DCS" toast. The app drops
+  that connection and keeps retrying, and never uses an outdated script's data. Cleared like
+  `DcsAuthFailed`.
+- **Shared samples:** `DcsWireSamples` (unit tests) holds one sample line per message type. The
+  parser tests parse them, and `DcsWireContractTests` asserts that the generated Lua's JSON keys,
+  the samples' keys and the C# DTOs' `[JsonPropertyName]`s are the same set. A new field or
+  message means a new sample, or that test fails. It checks names only, not types or nesting.
 
 **Check every DCS API call against the stock docs before using it** —
 `DCS World/API/Sim_ControlAPI.md` (Hooks: `Sim.*`, callbacks, which `Export.Lo*` calls work
@@ -190,13 +201,14 @@ without both.
 - **DCS link secret:** baked into the deployed Hooks script (deploy/generate take it as a
   parameter; it must be base64url since it sits in a Lua string literal). After connecting,
   `DcsConnection` sends `AUTH <secret>` first. The script runs no command and sends nothing
-  until that matches, then replies `{"authOk":true}`. On a mismatch it replies
+  until that matches, then replies `{"authOk":true,"protocol":N}`. On a mismatch it replies
   `{"authError":true}` and closes. A client that doesn't authenticate within `AUTH_TIMEOUT` (2 s)
   is dropped, so a stray process can't hold the single client slot. **`DcsConnected` means
-  authenticated**, not just TCP-connected. A script that streams without the handshake (deployed
-  before #7) or rejects the secret sets `BridgeStatus.DcsAuthFailed` → annunciator **AUTH
-  FAILED** + "redeploy Lua scripts, restart DCS" toast. It's cleared by a successful handshake,
-  or when DCS can't be reached at all.
+  authenticated**, not just TCP-connected. A script that rejects the secret sets
+  `BridgeStatus.DcsAuthFailed` → annunciator **AUTH FAILED** + "redeploy Lua scripts, restart
+  DCS" toast. It's cleared by a successful handshake, or when DCS can't be reached at all. A
+  script that streams without the handshake (deployed before #7) is **SCRIPT OUTDATED** instead
+  (see the protocol version above).
 
 Neither secret is ever logged. Tests assert this for the connection, the host, and tool calls.
 

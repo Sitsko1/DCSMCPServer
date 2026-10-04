@@ -6,8 +6,9 @@ namespace DCS.AIAutomator.Core;
 
 /// <summary>
 /// Wire contract for DCS-side telemetry: one JSON object per line, written by the Hooks script
-/// (LuaHooksScriptGenerator). Keep the two in sync by hand — nothing enforces it across the
-/// language boundary.
+/// (LuaHooksScriptGenerator). Keep the two in sync by hand and bump
+/// LuaHooksScriptGenerator.ProtocolVersion on any change; the unit tests' DcsWireSamples check
+/// both sides' field names against shared sample lines.
 /// </summary>
 public sealed class DcsTelemetryMessage
 {
@@ -33,6 +34,11 @@ public sealed class DcsTelemetryMessage
     /// <summary>The Hooks script accepted the app's link secret (reply to its AUTH line).</summary>
     [JsonPropertyName("authOk")]
     public bool? AuthOk { get; set; }
+
+    /// <summary>The script's wire contract version, sent with authOk; absent from scripts that
+    /// predate versioning. See LuaHooksScriptGenerator.ProtocolVersion.</summary>
+    [JsonPropertyName("protocol")]
+    public int? Protocol { get; set; }
 
     /// <summary>The Hooks script rejected the app's link secret; it closes the connection next.</summary>
     [JsonPropertyName("authError")]
@@ -86,9 +92,10 @@ internal partial class DcsTelemetryJsonContext : JsonSerializerContext
 /// <param name="Log">A forwarded Hooks-script log message, if this line carries one.</param>
 /// <param name="AuthOk">The script accepted the link secret.</param>
 /// <param name="AuthError">The script rejected the link secret.</param>
+/// <param name="Protocol">The script's wire contract version (sent with AuthOk); null if it didn't say.</param>
 public sealed record DcsLine(
     bool IsMissionReport, MissionInfo? Mission, AircraftState? Aircraft, bool? Paused,
-    DcsLogEntry? Log = null, bool AuthOk = false, bool AuthError = false);
+    DcsLogEntry? Log = null, bool AuthOk = false, bool AuthError = false, int? Protocol = null);
 
 /// <param name="Level">"info", "warning" or "error", as the Hooks script reports it.</param>
 public sealed record DcsLogEntry(string Level, string Message)
@@ -155,7 +162,7 @@ public static class DcsTelemetryParser
 
         DcsLogEntry? log = message.Log is { Message: { } text } l ? new DcsLogEntry(l.Level ?? "info", text) : null;
         parsed = new DcsLine(message.MissionActive.HasValue, mission, aircraft, message.Paused, log,
-            AuthOk: message.AuthOk == true, AuthError: message.AuthError == true);
+            AuthOk: message.AuthOk == true, AuthError: message.AuthError == true, Protocol: message.Protocol);
         return true;
     }
 }
