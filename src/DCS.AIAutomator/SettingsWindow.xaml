@@ -235,6 +235,15 @@
                             <Button Content="Open log folder" Click="OnOpenLogFolderClicked" HorizontalAlignment="Left" />
                         </StackPanel>
                     </Border>
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <StackPanel Spacing="8">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Bug reports" Style="{StaticResource SettingsCardTitleStyle}" />
+                                <TextBlock Text="Saves the log files and a short about.txt (versions, ports, connection states, detected AI agents) as one zip to attach to an issue. Contains no API keys or secrets." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Content="Export logs…" Click="OnExportLogsClicked" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
             </StackPanel>

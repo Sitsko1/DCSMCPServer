@@ -5,10 +5,12 @@ using System.IO;
 using System.Linq;
 using DCS.AIAutomator.Core;
 using DCS.AIAutomator.Agents;
+using DCS.AIAutomator.Mcp;
 using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -344,6 +346,58 @@ public sealed partial class SettingsWindow : Window
     }
 
     private void OnOpenLogFolderClicked(object sender, RoutedEventArgs e) => ((App)Application.Current).OpenLogFolder();
+
+    private async void OnExportLogsClicked(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.Desktop,
+            SuggestedFileName = $"dcs-aiautomator-logs-{DateTime.Now:yyyyMMdd-HHmm}",
+        };
+        picker.FileTypeChoices.Add("Zip archive", [".zip"]);
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+        StorageFile? file = await picker.PickSaveFileAsync();
+        if (file is null) return;
+
+        try
+        {
+            // All agents, detected or not: "not found" is useful in a report too.
+            var agents = AgentIntegrations.All(() => CurrentApp.McpUrl, () => CurrentApp.McpApiKey,
+                    Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "Backups"))
+                .Select(a => (a.Name, a.IsDetected()));
+            string about = CurrentApp.DiagnosticsAbout(agents);
+            using (Stream zip = await file.OpenStreamForWriteAsync())
+            {
+                zip.SetLength(0); // the picker may have chosen an existing file
+                DiagnosticsExport.WriteZip(zip, CurrentApp.LogDirectory, about);
+            }
+            _log.LogInformation("Logs exported for a bug report");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Log export failed");
+            _notifications.Show("Log export failed", ex.Message, NotificationSeverity.Error);
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = RootGrid.ActualTheme,
+            Title = "Logs exported",
+            Content = $"Saved to {file.Path}. Attach it to your issue.",
+            PrimaryButtonText = "Open folder",
+            CloseButtonText = "Close",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            var options = new Windows.System.FolderLauncherOptions();
+            options.ItemsToSelect.Add(file);
+            _ = Windows.System.Launcher.LaunchFolderAsync(await file.GetParentAsync(), options);
+        }
+    }
 
     // Nothing is persisted until Save, so discarding staged edits is just closing; App drops its
     // reference on Closed and the next open reloads from SettingsService.
