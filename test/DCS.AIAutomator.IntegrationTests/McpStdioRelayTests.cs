@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Text.Json.Nodes;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -41,11 +42,6 @@ public class McpStdioRelayTests : IAsyncLifetime
 
         return await McpClient.CreateAsync(
             new StreamClientTransport(serverInput: clientToRelay, serverOutput: clientIn),
-            // The client probes with server/discover first and falls back to initialize when the
-            // probe times out (5 s by default). A slow first request on CI tripped that fallback,
-            // which the relay mishandles (the probe's protocol header sticks, #36).
-            // Wait as long as the whole connect may take, so these tests don't depend on timing.
-            clientOptions: new McpClientOptions { DiscoverProbeTimeout = TimeSpan.FromSeconds(15) },
             cancellationToken: new CancellationTokenSource(TimeSpan.FromSeconds(15)).Token);
     }
 
@@ -59,6 +55,65 @@ public class McpStdioRelayTests : IAsyncLifetime
 
         CallToolResult result = await client.CallToolAsync("get_aircraft_state", new Dictionary<string, object?>());
         Assert.StartsWith("No active aircraft", result.Content.OfType<TextContentBlock>().First().Text);
+    }
+
+    [Fact]
+    public async Task AnInitialize_AfterASuccessfulServerDiscoverProbe_StillWorks()
+    {
+        // #36: the SDK client probes with server/discover (2026-07-28) and, if the probe times out on
+        // its side (a slow first request: seen on CI), falls back to initialize (2025-11-25) on the
+        // same connection. The probe may still reach the app and succeed; the SDK's HTTP transport
+        // then caches 2026-07-28 and sends it as the MCP-Protocol-Version header of the fallback
+        // initialize, which the app rejects. Raw messages make that order deterministic.
+        var (toRelay, fromRelay) = StartRawRelay($"{ListenUrl}/mcp", ApiKey);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+
+        await toRelay.SendMessageAsync(new JsonRpcRequest
+        {
+            Id = new RequestId(1),
+            Method = RequestMethods.ServerDiscover,
+            Params = JsonNode.Parse("""
+                {"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                          "io.modelcontextprotocol/clientInfo":{"name":"relay-test","version":"1"},
+                          "io.modelcontextprotocol/clientCapabilities":{}}}
+                """),
+        }, timeout.Token);
+        Assert.IsType<JsonRpcResponse>(await ReadReplyAsync(fromRelay, new RequestId(1), timeout.Token)); // the probe succeeded
+
+        await toRelay.SendMessageAsync(new JsonRpcRequest
+        {
+            Id = new RequestId(2),
+            Method = RequestMethods.Initialize,
+            Params = JsonNode.Parse("""{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"relay-test","version":"1"}}"""),
+        }, timeout.Token);
+        JsonRpcMessage reply = await ReadReplyAsync(fromRelay, new RequestId(2), timeout.Token);
+
+        Assert.True(reply is JsonRpcResponse, $"initialize failed: {(reply as JsonRpcError)?.Error.Message}");
+    }
+
+    private static async Task<JsonRpcMessage> ReadReplyAsync(ITransport from, RequestId id, CancellationToken cancellationToken)
+    {
+        await foreach (JsonRpcMessage message in from.MessageReader.ReadAllAsync(cancellationToken))
+        {
+            if (message is JsonRpcResponse { Id: var r } && r.Equals(id)) return message;
+            if (message is JsonRpcError { Id: var e } && e.Equals(id)) return message;
+        }
+        throw new InvalidOperationException($"the relay closed without replying to {id}");
+    }
+
+    // Starts the relay on two pipes and returns the raw client end of them (no SDK client logic).
+    private (ITransport ToRelay, ITransport FromRelay) StartRawRelay(string endpoint, string apiKey)
+    {
+        var clientToRelay = new AnonymousPipeServerStream(PipeDirection.Out);
+        var relayIn = new AnonymousPipeClientStream(PipeDirection.In, clientToRelay.ClientSafePipeHandle);
+        var relayToClient = new AnonymousPipeServerStream(PipeDirection.Out);
+        var clientIn = new AnonymousPipeClientStream(PipeDirection.In, relayToClient.ClientSafePipeHandle);
+
+        _ = McpStdioRelay.RunAsync(new StreamServerTransport(relayIn, relayToClient, "relay-under-test"),
+            new Uri(endpoint), apiKey, loggerFactory: null, _stop.Token);
+
+        var client = new StreamServerTransport(clientIn, clientToRelay, "raw-client");
+        return (client, client);
     }
 
     [Fact]
