@@ -101,6 +101,10 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
   - `McpStdioRelay` — Claude Desktop's stdio ↔ HTTP pipe (#15, below).
   - `DcsLogging` — the Serilog pipeline (see Gotchas). Only the app uses it; it lives here so
     tests can reach it.
+  - `DiagnosticsExport` — Settings → Diagnostics → **Export logs…** (#23): zips only
+    `dcs-aiautomator-*.clef` (app and relay logs, opened with shared read since the logger holds
+    today's file) plus an `about.txt` built only from non-secret values (versions, endpoints,
+    annunciator states, detected agents). It takes no keys.
 - **`src/DCS.AIAutomator.Agents`** — class library: registering this server with AI agents
   (#15). It has no MCP SDK or Core dependency.
   - `IAgentIntegration` + one class per agent (`AgentIntegrations.cs`).

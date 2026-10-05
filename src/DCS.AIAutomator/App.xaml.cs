@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using DCS.AIAutomator.Core;
@@ -34,6 +35,22 @@ public partial class App : Application
     /// <summary>The folder holding the app's log files (packaged local cache), for "Open log folder"/"View log".</summary>
     public string LogDirectory => _logging?.LogDirectory ?? "";
 
+    /// <summary>The installed package's version, e.g. "1.0.0.0".</summary>
+    public static string AppVersion
+    {
+        get
+        {
+            PackageVersion v = Package.Current.Id.Version;
+            return $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision}";
+        }
+    }
+
+    /// <summary>Non-secret facts for a bug report's about.txt (see DiagnosticsExport).</summary>
+    public string DiagnosticsAbout(IEnumerable<(string Name, bool Detected)> agents) =>
+        DiagnosticsExport.About(AppVersion,
+            $"{System.Runtime.InteropServices.RuntimeInformation.OSDescription} ({Environment.OSVersion.Version})",
+            _bridgeHost?.Status ?? new BridgeStatus(), agents, DateTimeOffset.UtcNow);
+
     /// <summary>
     /// Sets the requested theme for every open window's root element so ThemeResource lookups
     /// follow the chosen theme at runtime.
@@ -63,9 +80,7 @@ public partial class App : Application
             _settings.LogRetentionDays);
         _log = _logging.Provider.CreateLogger("DCS.AIAutomator.App");
         HookUnhandledExceptions();
-        PackageVersion v = Package.Current.Id.Version;
-        _log.LogInformation("DCS.AIAutomator {Version} starting; logs in {LogDirectory}",
-            $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision}", _logging.LogDirectory);
+        _log.LogInformation("DCS.AIAutomator {Version} starting; logs in {LogDirectory}", AppVersion, _logging.LogDirectory);
 
         _notifications = new NotificationService(DispatcherQueue.GetForCurrentThread())
         {

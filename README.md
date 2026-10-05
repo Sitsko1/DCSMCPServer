@@ -59,6 +59,10 @@ kept, and a `.bak` is made. Decline, and everything else still works; only messa
 If the DCS indicator shows **AUTH FAILED** or **SCRIPT OUTDATED** (the deployed script is from
 another version of this app), redeploy and restart DCS.
 
+**Reporting a bug:** Settings → Diagnostics → **Export logs…** saves the app's log files plus a
+short `about.txt` (versions, ports, connection states, detected AI agents) as one zip. Attach it to
+your issue. It contains no API keys or secrets.
+
 `dotnet run --project src/DCS.AIAutomator -p:Platform=x64` doesn't reliably work for this app —
 see the `dotnet run` gotcha in `CLAUDE.md` if you hit `COMException 0x80040154
 (REGDB_E_CLASSNOTREG)`.
