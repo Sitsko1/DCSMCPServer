@@ -333,8 +333,9 @@ Idempotent: nothing to migrate + identical script → "Already deployed", writes
 
 Verified against a live DCS session (single-player, F/A-18C quick-start): the Hooks script
 deploys, DCS listens, the app connects, and the readout shows the correct mission name, map
-and aircraft display name. Still unverified live: `send_atc_instruction` showing its message
-in DCS (#27 live check).
+and aircraft display name. Commands are verified live too: the on-screen message (#27),
+`list_ai_flights` (#28), and every ATC action actually tasking AI flights (Vectors, Orbit,
+Hold, ClearToLand, #29–#31). Each PR records its live findings.
 
 The deployer only accepts a real Saved Games folder (`DcsPathValidator`: must contain `Config`,
 must not contain `bin\DCS.exe`/`bin-mt\DCS.exe`). The install folder also has `Config` and a
