@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 5;
+    public const int ProtocolVersion = 6;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -355,9 +355,10 @@ public static class LuaHooksScriptGenerator
         end
 
         -- AI tasking commands share one mission-scripting frame: find the group, refuse player
-        -- groups, then a task body (below) sets the task. Outer string.format arguments: group name
-        -- twice, altitude in meters MSL (or nil = current), true course in degrees, variation.
-        -- Speed is the group's current one (200 m/s if nearly stopped).
+        -- groups, then a task body (below) sets the task. TASK_CODE_START is formatted with the group
+        -- name twice, altitude in meters MSL (or nil = current) and true course in degrees;
+        -- TASK_CODE_END with the variation. Bodies are inserted as they are (not formatted), so one
+        -- that needs a value quotes it itself. Speed is the group's current one (200 m/s if nearly stopped).
         local TASK_CODE_START = [==[
             local g = Group.getByName(%q)
             if g == nil or not g:isExist() then return "no group named " .. %q end
@@ -410,6 +411,65 @@ public static class LuaHooksScriptGenerator
             } })
         ]==]
 
+        -- cmd "land" (group, airbase?): land at a friendly airdrome, by name (case-insensitive, or a
+        -- unique partial match) or else the nearest. Formatted with the wanted name ("" = nearest)
+        -- before it's used as a body; returns its own data (airbase, distance), so its final return
+        -- sits in a do-block (a Lua return must end its block, and TASK_CODE_END follows).
+        local LAND_TASK = [==[
+            local function esc(s) return (tostring(s):gsub('[%%c"\\]', function(ch) return string.format('\\u%%04x', ch:byte()) end)) end
+            local wanted = %q
+            local side = g:getCoalition()
+            local function distance(ab)
+                local q = ab:getPoint()
+                local dx, dz = q.x - p.x, q.z - p.z
+                return math.sqrt(dx * dx + dz * dz)
+            end
+            local friendly = {}
+            for _, ab in ipairs(coalition.getAirbases(side) or {}) do
+                local desc = ab:getDesc()
+                if desc and desc.category == Airbase.Category.AIRDROME then friendly[#friendly + 1] = ab end
+            end
+            table.sort(friendly, function(a, b) return distance(a) < distance(b) end)
+            local function nearest()
+                local names = {}
+                for i = 1, math.min(5, #friendly) do names[i] = friendly[i]:getName() end
+                if #names == 0 then return "there are no friendly airfields" end
+                return "nearest friendly airfields: " .. table.concat(names, ", ")
+            end
+            local target = nil
+            if wanted == "" then
+                target = friendly[1]
+                if target == nil then return "no friendly airfield to land at: " .. nearest() end
+            else
+                local lower = wanted:lower()
+                local partial = {}
+                for _, ab in ipairs(friendly) do
+                    local name = ab:getName():lower()
+                    if name == lower then target = ab break end
+                    if name:find(lower, 1, true) then partial[#partial + 1] = ab end
+                end
+                if target == nil and #partial == 1 then target = partial[1] end
+                if target == nil then
+                    local other = Airbase.getByName(wanted)
+                    if other and other:getCoalition() ~= side then
+                        return wanted .. " isn't a friendly airfield; " .. nearest()
+                    end
+                    if #partial > 1 then
+                        local names = {}
+                        for i, ab in ipairs(partial) do names[i] = ab:getName() end
+                        return '"' .. wanted .. '" matches several airfields: ' .. table.concat(names, ", ")
+                    end
+                    return 'no friendly airfield named "' .. wanted .. '"; ' .. nearest()
+                end
+            end
+            local q = target:getPoint()
+            controller:setTask({ id = "Mission", params = { route = { points = {
+                { type = "Turning Point", action = "Turning Point", x = p.x, y = p.z, alt = alt, alt_type = "BARO", speed = speed },
+                { type = "Land", action = "Landing", x = q.x, y = q.z, alt = q.y, alt_type = "BARO", speed = speed, airdromeId = target:getID() },
+            } } } })
+            do return string.format('ok {"altMsl":%%.1f,"variation":null,"airbase":"%%s","distance":%%.0f}', alt, esc(target:getName()), distance(target)) end
+        ]==]
+
         -- Validates the shared parameters (group, heading if the task uses one, altitude) and runs
         -- TASK_CODE_START .. body .. TASK_CODE_END in mission scripting.
         local function mcpBridgeTask(c, usesHeading, body)
@@ -428,9 +488,10 @@ public static class LuaHooksScriptGenerator
             end
             local variation = usesHeading and mcpBridgeMagneticVariation() or nil
             local course = (heading + (variation or 0)) % 360
-            return mcpBridgeRunInMission(string.format(TASK_CODE_START .. body .. TASK_CODE_END, c.group, c.group,
-                alt and string.format("%.1f", alt) or "nil", course,
-                variation and string.format("%.2f", variation) or "null"))
+            return mcpBridgeRunInMission(
+                string.format(TASK_CODE_START, c.group, c.group, alt and string.format("%.1f", alt) or "nil", course)
+                .. body
+                .. string.format(TASK_CODE_END, variation and string.format("%.2f", variation) or "null"))
         end
 
         -- cmd "vector" (group, heading, altitude?): turn onto a magnetic heading.
@@ -441,6 +502,11 @@ public static class LuaHooksScriptGenerator
 
         -- cmd "hold" (group, heading, altitude?): racetrack at the present position, inbound on the magnetic heading.
         function mcpBridgeCommands.hold(c) return mcpBridgeTask(c, true, HOLD_TASK) end
+
+        function mcpBridgeCommands.land(c)
+            if c.airbase ~= nil and type(c.airbase) ~= "string" then return false, "airbase must be a string" end
+            return mcpBridgeTask(c, false, string.format(LAND_TASK, c.airbase or ""))
+        end
 
         -- LoGetMCPState flags that mean something is wrong; its plain state flags are left out.
         local mcpBridgeFailureFlags = {

@@ -73,19 +73,25 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     tool-call logging filter and client-activity recording. Exposes `Status`.
   - `AtcTools` — MCP tool `send_atc_instruction`, declared with SDK attributes
     (`[McpServerTool]`, `[Description]`), not hand-built JSON schema. Every instruction is
-    shown on screen (`DcsCommands.ShowMessageAsync`). **Vectors** (#29), **Orbit** and **Hold** (#30) also task the flight:
+    shown on screen (`DcsCommands.ShowMessageAsync`). Every action also tasks the flight: **Vectors**
+    (#29), **Orbit** and **Hold** (#30), **ClearToLand** (#31):
     `AiFlight.Resolve` finds it among `ListFlightsAsync`'s flights (exact group name first, then
     callsign in any form; a shared callsign or no match is an error listing candidates). Then
     `VectorAsync` sets a 200 km route on the heading, `OrbitAsync` a `Circle` Orbit task over the
     present position, `HoldAsync` a `Race-Track` Orbit task whose `HoldLegMeters` inbound leg ends at
     the present position on the heading (both verified live: the E-2D circled its point, an F/A-18C
-    flew an east-west racetrack at the commanded 5,000 m). All take an altitude in the user's units (converted to
+    flew an east-west racetrack at the commanded 5,000 m). `LandAsync` picks a friendly *airdrome*
+    in the script (the named one, matched case-insensitively or by a unique part of the name, or
+    the nearest) and routes to DCS's own landing waypoint (`type = "Land"`, `action = "Landing"`,
+    `airdromeId`, as `MissionEditor/modules/me_exportToMiz.lua` writes it). Hostile, unknown or
+    ambiguous names are errors listing the nearest friendly airfields, and the result names the
+    airfield and its distance (`AircraftStateFormatter.Distance`: nm or km). The others take an altitude in the user's units (converted to
     meters here) or keep the current one. In the script they share one mission-code frame
-    (`mcpBridgeTask`: `TASK_CODE_START` .. task body .. `TASK_CODE_END`). The player's own flight is never tasked,
+    (`mcpBridgeTask`: `TASK_CODE_START` .. task body .. `TASK_CODE_END`; only START and END are formatted, so a body that
+    needs a value, like LAND_TASK's airfield name, `%q`-quotes it itself). The player's own flight is never tasked,
     only messaged. ATC headings are **magnetic**: the script converts them to a true course with
     the variation measured at the player's aircraft (`LoGetSelfData().Heading` minus
-    `LoGetMagneticYaw()`), and without a player aircraft says it flew the heading as true.
-    ClearToLand is message-only until #31. Depends on `IDcsConnection` and
+    `LoGetMagneticYaw()`), and without a player aircraft says it flew the heading as true. Depends on `IDcsConnection` and
     `BridgeStatus` (units), so tests use `FakeDcsConnection` (per-command `Responses`).
   - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
     `BridgeStatus` only (never the connection).

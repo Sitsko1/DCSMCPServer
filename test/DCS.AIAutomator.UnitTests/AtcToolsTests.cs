@@ -16,6 +16,63 @@ public class AtcToolsTests
         _connection.RespondWithData("vector", """{"altMsl":6096.0,"variation":6.2}""");
         _connection.RespondWithData("orbit", """{"altMsl":4572.0,"variation":null}""");
         _connection.RespondWithData("hold", """{"altMsl":6096.0,"variation":6.2}""");
+        _connection.RespondWithData("land", """{"altMsl":4572.0,"variation":null,"airbase":"Kutaisi","distance":46300}""");
+    }
+
+    [Fact]
+    public async Task ClearToLand_LandsAtTheNamedAirfield_AndNamesItBack()
+    {
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand, airbase: " kutaisi ");
+
+        Assert.Equal(["listFlights", "land", "message"], _connection.Sent.Select(s => s.Cmd));
+        var land = _connection.ArgsOf("land")!;
+        Assert.Equal("Enfield-1", (string?)land["group"]);
+        Assert.Equal("kutaisi", (string?)land["airbase"]); // trimmed; DCS matches case-insensitively
+        Assert.False(land.ContainsKey("heading"));
+        Assert.Equal(
+            "Enfield 1-1 (group \"Enfield-1\") is cleared to land at Kutaisi (25 nm away). " +
+            "Shown on screen in DCS: \"ATC to Enfield 1-1: cleared to land Kutaisi\"",
+            result);
+    }
+
+    [Fact]
+    public async Task ClearToLand_WithoutAnAirfield_AsksForTheNearestFriendlyOne()
+    {
+        _status.Units = UnitSystem.Metric;
+
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
+
+        Assert.False(_connection.ArgsOf("land")!.ContainsKey("airbase"));
+        Assert.StartsWith("Enfield 1-1 (group \"Enfield-1\") is cleared to land at Kutaisi (46 km away).", result);
+    }
+
+    [Fact]
+    public async Task ClearToLand_IgnoresAltitude()
+    {
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand, altitude: 20000);
+
+        Assert.False(_connection.ArgsOf("land")!.ContainsKey("altitude"));
+        Assert.EndsWith("\"ATC to Enfield 1-1: cleared to land Kutaisi\"", result);
+    }
+
+    [Fact]
+    public async Task ClearToLand_ReportsDcsReason_ForAnUnknownOrHostileAirfield()
+    {
+        _connection.Responses["land"] = DcsCommandResult.Failed("Sochi-Adler isn't a friendly airfield; nearest friendly airfields: Kutaisi, Senaki-Kolkhi");
+
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand, airbase: "Sochi-Adler");
+
+        Assert.Equal("Error: DCS didn't task Enfield 1-1: Sochi-Adler isn't a friendly airfield; nearest friendly airfields: Kutaisi, Senaki-Kolkhi", result);
+        Assert.DoesNotContain(_connection.Sent, s => s.Cmd == "message");
+    }
+
+    [Fact]
+    public async Task ClearToLand_FollowsTheSameAddressingAndPlayerRules()
+    {
+        Assert.StartsWith("Error: Callsign Colt 1-1 is shared", await Tools.SendAtcInstruction("Colt 1-1", AtcAction.ClearToLand));
+        Assert.StartsWith("Colt 1-1 (group \"Player #001\") is the player's flight, so it wasn't tasked.",
+            await Tools.SendAtcInstruction("Player #001", AtcAction.ClearToLand));
+        Assert.DoesNotContain(_connection.Sent, s => s.Cmd == "land");
     }
 
     [Fact]
@@ -167,24 +224,18 @@ public class AtcToolsTests
     }
 
     [Fact]
-    public async Task OtherActions_OnlyShowTheMessage_AndSaySo()
+    public async Task HostileText_TravelsOnlyAsPlainData()
     {
-        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
+        // Was Lua injection (#4): the callsign went into Lua source. Now user text is only ever JSON
+        // data: an unknown callsign never leaves the app, and an airfield name is a plain argument
+        // (the script %q-quotes it).
+        const string hostile = "x\", 10) os.exit() --\n\\";
 
-        Assert.Equal(["message"], _connection.Sent.Select(s => s.Cmd));
-        Assert.Equal("ClearToLand doesn't task aircraft yet, so no flight was moved. " +
-                     "Shown on screen in DCS: \"ATC to Enfield 1-1: cleared to land\"", result);
-    }
+        Assert.StartsWith("Error: No flight called", await Tools.SendAtcInstruction(hostile, AtcAction.ClearToLand));
+        Assert.Equal(["listFlights"], _connection.Sent.Select(s => s.Cmd));
 
-    [Fact]
-    public async Task HostileCallsigns_TravelOnlyAsPlainText()
-    {
-        // Was Lua injection (#4): the callsign went into Lua source. Now it's only ever JSON data.
-        const string callsign = "x\", 10) os.exit() --\n\\";
-
-        await Tools.SendAtcInstruction(callsign, AtcAction.ClearToLand);
-
-        Assert.StartsWith($"ATC to {callsign}:", (string?)_connection.ArgsOf("message")!["text"]);
+        await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand, airbase: hostile);
+        Assert.Equal(hostile.Trim(), (string?)_connection.ArgsOf("land")!["airbase"]);
     }
 
     [Fact]
@@ -192,7 +243,7 @@ public class AtcToolsTests
     {
         _connection.Responses["message"] = DcsCommandResult.Failed("mission scripting isn't enabled");
 
-        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Orbit);
 
         Assert.EndsWith("The on-screen message failed: mission scripting isn't enabled", result);
     }

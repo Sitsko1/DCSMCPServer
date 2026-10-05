@@ -24,9 +24,8 @@ public partial class AtcJsonContext : JsonSerializerContext
 
 /// <summary>
 /// ATC (air traffic control) tool for DCS World. Sends structured commands to the DCS Hooks
-/// script (see <see cref="DcsCommands"/>) and reports what DCS actually did. Vectors, Orbit and
-/// Hold task the addressed AI flight; every instruction is also shown on screen. ClearToLand is
-/// message-only until #31.
+/// script (see <see cref="DcsCommands"/>) and reports what DCS actually did. Every action tasks
+/// the addressed AI flight (never the player's own), and every instruction is also shown on screen.
 /// </summary>
 [McpServerToolType]
 public class AtcTools
@@ -47,7 +46,8 @@ public class AtcTools
     [Description("Gives an ATC instruction to a flight in DCS and shows it on screen. Vectors turns the " +
                  "addressed AI flight onto the (magnetic) heading. Orbit circles over its present position. " +
                  "Hold flies a racetrack at its present position with the inbound leg on the (magnetic) heading. " +
-                 "All three use the given altitude or the current one. ClearToLand is only shown on screen for now. " +
+                 "These three use the given altitude or the current one. ClearToLand lands it at the named friendly " +
+                 "airfield, or the nearest friendly one. " +
                  "Address flights by callsign ('Enfield 1-1') or group name, as list_ai_flights shows them. " +
                  "Reports what DCS actually did.")]
     public async Task<string> SendAtcInstruction(
@@ -55,6 +55,7 @@ public class AtcTools
         [Description("The instruction.")] AtcAction action,
         [Description("Magnetic heading in degrees (1-360): the heading to fly for Vectors, the inbound leg for Hold. Not used by Orbit.")] double heading = 360,
         [Description("Altitude (Vectors, Orbit, Hold), in the user's units: feet or meters, as get_aircraft_state reports. Omit to keep the current altitude.")] double? altitude = null,
+        [Description("Airfield to land at (ClearToLand), e.g. 'Kutaisi'; case-insensitive, a unique part of the name is enough. Omit for the nearest friendly airfield.")] string? airbase = null,
         CancellationToken cancellationToken = default)
     {
         UnitSystem units = _status.Units;
@@ -67,41 +68,39 @@ public class AtcTools
         }
 
         string outcome;
-        if (action is AtcAction.Vectors or AtcAction.Orbit or AtcAction.Hold)
-        {
-            var (list, flights) = await _connection.ListFlightsAsync(cancellationToken);
-            if (!list.Ok) return $"Error: couldn't look up the flight: {list.Error}";
-            var (flight, error) = AiFlight.Resolve(flights, aircraft_callsign);
-            if (flight is null) return $"Error: {error}";
+        string? landedAt = null;
+        var (list, flights) = await _connection.ListFlightsAsync(cancellationToken);
+        if (!list.Ok) return $"Error: couldn't look up the flight: {list.Error}";
+        var (flight, error) = AiFlight.Resolve(flights, aircraft_callsign);
+        if (flight is null) return $"Error: {error}";
 
-            string who = $"{flight.Callsign} (group \"{flight.GroupName}\")";
-            if (flight.IsPlayer)
-            {
-                outcome = $"{who} is the player's flight, so it wasn't tasked.";
-            }
-            else
-            {
-                var (result, task) = action switch
-                {
-                    AtcAction.Vectors => await _connection.VectorAsync(flight.GroupName, heading, altitudeMeters, cancellationToken),
-                    AtcAction.Orbit => await _connection.OrbitAsync(flight.GroupName, altitudeMeters, cancellationToken),
-                    _ => await _connection.HoldAsync(flight.GroupName, heading, altitudeMeters, cancellationToken),
-                };
-                if (!result.Ok) return $"Error: DCS didn't task {flight.Callsign}: {result.Error}";
-                string at = $"at {AircraftStateFormatter.Altitude(task?.AltitudeMslMeters, units)} MSL";
-                outcome = action switch
-                {
-                    AtcAction.Vectors => $"{who} is turning to heading {heading:000} {at}.",
-                    AtcAction.Orbit => $"{who} is orbiting its present position {at}.",
-                    _ => $"{who} is holding at its present position, inbound heading {heading:000}, {at}.",
-                };
-                if (action != AtcAction.Orbit && task?.MagneticVariationDegrees is null)
-                    outcome += " There was no player aircraft to measure magnetic variation from, so the heading was flown as true.";
-            }
+        string who = $"{flight.Callsign} (group \"{flight.GroupName}\")";
+        if (flight.IsPlayer)
+        {
+            outcome = $"{who} is the player's flight, so it wasn't tasked.";
         }
         else
         {
-            outcome = $"{action} doesn't task aircraft yet, so no flight was moved.";
+            var (result, task) = action switch
+            {
+                AtcAction.Vectors => await _connection.VectorAsync(flight.GroupName, heading, altitudeMeters, cancellationToken),
+                AtcAction.Orbit => await _connection.OrbitAsync(flight.GroupName, altitudeMeters, cancellationToken),
+                AtcAction.Hold => await _connection.HoldAsync(flight.GroupName, heading, altitudeMeters, cancellationToken),
+                _ => await _connection.LandAsync(flight.GroupName, airbase, cancellationToken),
+            };
+            if (!result.Ok) return $"Error: DCS didn't task {flight.Callsign}: {result.Error}";
+            string at = $"at {AircraftStateFormatter.Altitude(task?.AltitudeMslMeters, units)} MSL";
+            outcome = action switch
+            {
+                AtcAction.Vectors => $"{who} is turning to heading {heading:000} {at}.",
+                AtcAction.Orbit => $"{who} is orbiting its present position {at}.",
+                AtcAction.Hold => $"{who} is holding at its present position, inbound heading {heading:000}, {at}.",
+                _ => $"{who} is cleared to land at {task?.Airbase ?? "an airfield"} " +
+                     $"({AircraftStateFormatter.Distance(task?.DistanceMeters, units)} away).",
+            };
+            landedAt = task?.Airbase;
+            if (action is AtcAction.Vectors or AtcAction.Hold && task?.MagneticVariationDegrees is null)
+                outcome += " There was no player aircraft to measure magnetic variation from, so the heading was flown as true.";
         }
 
         string text = $"ATC to {aircraft_callsign}: " + action switch
@@ -109,8 +108,8 @@ public class AtcTools
             AtcAction.Vectors => $"vectors, fly heading {heading:000}",
             AtcAction.Orbit => "orbit present position",
             AtcAction.Hold => $"hold at present position, inbound heading {heading:000}",
-            _ => "cleared to land",
-        } + (altitudeMeters is double m ? $", altitude {AircraftStateFormatter.Altitude(m, units)}" : "");
+            _ => landedAt is null ? "cleared to land" : $"cleared to land {landedAt}",
+        } + (altitudeMeters is double m && action != AtcAction.ClearToLand ? $", altitude {AircraftStateFormatter.Altitude(m, units)}" : "");
         DcsCommandResult shown = await _connection.ShowMessageAsync(text, MessageSeconds, cancellationToken);
         return shown.Ok
             ? $"{outcome} Shown on screen in DCS: \"{text}\""

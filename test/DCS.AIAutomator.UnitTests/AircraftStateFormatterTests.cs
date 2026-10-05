@@ -1,6 +1,14 @@
 
 public class AircraftStateFormatterTests
 {
+    [Fact]
+    public void Distance_NauticalMilesOrKilometers()
+    {
+        Assert.Equal("25 nm", AircraftStateFormatter.Distance(46300, UnitSystem.Imperial));
+        Assert.Equal("46 km", AircraftStateFormatter.Distance(46300, UnitSystem.Metric));
+        Assert.Equal(AircraftStateFormatter.Missing, AircraftStateFormatter.Distance(null, UnitSystem.Metric));
+    }
+
     [Theory]
     [InlineData(1000, 3280.84)]
     [InlineData(0, 0)]
