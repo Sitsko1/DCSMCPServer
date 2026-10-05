@@ -196,7 +196,7 @@ public class LuaHooksScriptGeneratorTests
         Assert.Contains("alt < MIN_TASK_ALTITUDE or alt > MAX_TASK_ALTITUDE", task);
         Assert.Contains("(heading + (variation or 0)) % 360", task); // magnetic -> true
         Assert.Contains("usesHeading and mcpBridgeMagneticVariation() or nil", task); // orbit: no variation
-        Assert.Contains("TASK_CODE_START .. body .. TASK_CODE_END", task);
+
         Assert.Contains($"local MIN_TASK_ALTITUDE, MAX_TASK_ALTITUDE = {DcsCommands.MinTaskAltitudeMeters}, {DcsCommands.MaxTaskAltitudeMeters}", Lua);
 
         Assert.Contains("function mcpBridgeCommands.vector(c) return mcpBridgeTask(c, true, VECTOR_TASK) end", Lua);
@@ -219,6 +219,34 @@ public class LuaHooksScriptGeneratorTests
         Assert.Contains("controller:setTask({ id = \"Mission\"", Lua);
         Assert.Contains("alt_type = \"BARO\"", Lua);
         Assert.Contains("'ok {\"altMsl\":%%.1f,\"variation\":%s}'", Lua); // %% survives the outer format
+    }
+
+    [Fact]
+    public void Generate_Land_PicksAFriendlyAirdrome_AndRoutesToALandingWaypoint()
+    {
+        string handler = FunctionBody("function mcpBridgeCommands.land(c)");
+        Assert.Contains("type(c.airbase) ~= \"string\"", handler); // validated
+        Assert.Contains("mcpBridgeTask(c, false, string.format(LAND_TASK, c.airbase or \"\"))", handler); // no heading; name %q-quoted
+
+        Assert.Contains("local wanted = %q", Lua);
+        Assert.Contains("coalition.getAirbases(side)", Lua);
+        Assert.Contains("desc.category == Airbase.Category.AIRDROME", Lua);
+        Assert.Contains("other:getCoalition() ~= side", Lua); // a hostile airfield is refused, by name
+        // DCS's own landing waypoint (MissionEditor/modules/me_exportToMiz.lua): type "Land", action "Landing", airdromeId.
+        Assert.Contains("type = \"Land\", action = \"Landing\"", Lua);
+        Assert.Contains("airdromeId = target:getID()", Lua);
+        Assert.Contains("do return string.format('ok {\"altMsl\":%%.1f,\"variation\":null,\"airbase\":\"%%s\",\"distance\":%%.0f}'", Lua);
+    }
+
+    [Fact]
+    public void Generate_TaskBodies_AreNotPassedThroughTheOuterFormat()
+    {
+        // A body (e.g. LAND_TASK with an airfield name) must never be a string.format pattern
+        // itself, or a '%' in user text would be interpreted.
+        string task = FunctionBody("local function mcpBridgeTask(c, usesHeading, body)");
+        Assert.Contains("string.format(TASK_CODE_START, c.group, c.group,", task);
+        Assert.Contains(".. body\n", task.Replace("\r\n", "\n"));
+        Assert.Contains("string.format(TASK_CODE_END,", task);
     }
 
     [Fact]

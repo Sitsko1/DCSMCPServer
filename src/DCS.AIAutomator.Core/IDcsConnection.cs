@@ -71,11 +71,20 @@ public static class DcsCommands
         CancellationToken cancellationToken = default) =>
         connection.TaskAsync("hold", groupName, inboundHeadingDegrees, altitudeMeters, cancellationToken);
 
+    /// <summary>Lands an AI group at a friendly airfield: <paramref name="airbase"/> by name
+    /// (case-insensitive, or a unique partial match), or the nearest friendly one when null.</summary>
+    public static Task<(DcsCommandResult Result, TaskResult? Task)> LandAsync(
+        this IDcsConnection connection, string groupName, string? airbase,
+        CancellationToken cancellationToken = default) =>
+        connection.TaskAsync("land", groupName, null, null, cancellationToken,
+            string.IsNullOrWhiteSpace(airbase) ? null : airbase.Trim());
+
     private static async Task<(DcsCommandResult Result, TaskResult? Task)> TaskAsync(
         this IDcsConnection connection, string cmd, string groupName, double? headingDegrees, double? altitudeMeters,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, string? airbase = null)
     {
         var args = new JsonObject { ["group"] = groupName };
+        if (airbase is not null) args["airbase"] = airbase;
         if (headingDegrees is double heading) args["heading"] = heading;
         if (altitudeMeters is double alt) args["altitude"] = alt;
         DcsCommandResult result = await connection.SendCommandAsync(cmd, args, cancellationToken);
@@ -83,7 +92,7 @@ public static class DcsCommands
         try
         {
             TaskResultTelemetry? t = result.Data?.Deserialize(DcsTelemetryJsonContext.Default.TaskResultTelemetry);
-            return (result, new TaskResult(t?.AltMsl, t?.Variation));
+            return (result, new TaskResult(t?.AltMsl, t?.Variation, t?.Airbase, t?.Distance));
         }
         catch (JsonException)
         {

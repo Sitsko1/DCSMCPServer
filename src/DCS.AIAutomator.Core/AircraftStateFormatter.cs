@@ -9,6 +9,7 @@ public static class UnitConversion
     public static double MpsToKnots(double mps) => mps * 1.943844;
     public static double MpsToFeetPerMinute(double mps) => mps * 196.850394;
     public static double MpsToKmh(double mps) => mps * 3.6;
+    public static double MetersToNauticalMiles(double meters) => meters / 1852;
 
     /// <summary>Whole degrees in 0–359 (a value that rounds to 360 is 0).</summary>
     public static int RadiansToHeadingDegrees(double radians)
@@ -32,6 +33,12 @@ public static partial class AircraftStateFormatter
         : units == UnitSystem.Imperial
             ? $"{UnitConversion.MetersToFeet(m).ToString("N0", Inv)} ft"
             : $"{m.ToString("N0", Inv)} m";
+
+    /// <summary>Distances between places: nautical miles (imperial, as in aviation) or km.</summary>
+    public static string Distance(double? meters, UnitSystem units) => meters is not double m ? Missing
+        : units == UnitSystem.Imperial
+            ? $"{UnitConversion.MetersToNauticalMiles(m).ToString("N0", Inv)} nm"
+            : $"{(m / 1000).ToString("N0", Inv)} km";
 
     public static string Speed(double? mps, UnitSystem units) => mps is not double v ? Missing
         : units == UnitSystem.Imperial
