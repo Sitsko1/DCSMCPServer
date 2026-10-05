@@ -10,8 +10,9 @@ bridging tool calls to a small Lua script the app deploys into DCS.
   in-process, over HTTP, exposing `get_aircraft_state` (the player aircraft's type, position,
   altitude, speeds, heading and malfunctions), `list_ai_flights` (the mission's AI aircraft and
   helicopters: callsign, group, type, coalition, position) and `send_atc_instruction` (shows an
-  ATC instruction on screen in DCS; **Vectors** also turns the addressed AI flight onto the
-  heading and altitude; Hold/Orbit/ClearToLand tasking is planned, #30–#31).
+  ATC instruction on screen in DCS; **Vectors**, **Orbit** and **Hold** also task the addressed
+  AI flight: turn onto a heading, circle, or fly a racetrack, at a given or the current altitude;
+  ClearToLand tasking is planned, #31).
 - Maintains a persistent connection to that script's telemetry socket (`127.0.0.1:1024` by
   default).
 - Shows live status in its window: whether the MCP bridge is up, whether DCS is connected, and

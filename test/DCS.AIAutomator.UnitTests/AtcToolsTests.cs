@@ -14,6 +14,59 @@ public class AtcToolsTests
     {
         _connection.RespondWithData("listFlights", Flights);
         _connection.RespondWithData("vector", """{"altMsl":6096.0,"variation":6.2}""");
+        _connection.RespondWithData("orbit", """{"altMsl":4572.0,"variation":null}""");
+        _connection.RespondWithData("hold", """{"altMsl":6096.0,"variation":6.2}""");
+    }
+
+    [Fact]
+    public async Task Orbit_TasksTheFlight_WithoutAHeading()
+    {
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Orbit, heading: 270);
+
+        Assert.Equal(["listFlights", "orbit", "message"], _connection.Sent.Select(s => s.Cmd));
+        var orbit = _connection.ArgsOf("orbit")!;
+        Assert.Equal("Enfield-1", (string?)orbit["group"]);
+        Assert.False(orbit.ContainsKey("heading"));
+        Assert.False(orbit.ContainsKey("altitude"));
+        // No "flown as true" note: an orbit has no heading.
+        Assert.Equal(
+            "Enfield 1-1 (group \"Enfield-1\") is orbiting its present position at 15,000 ft MSL. " +
+            "Shown on screen in DCS: \"ATC to Enfield 1-1: orbit present position\"",
+            result);
+    }
+
+    [Fact]
+    public async Task Hold_TasksTheFlight_WithTheInboundHeading_AndAltitude()
+    {
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Hold, heading: 90, altitude: 20000);
+
+        Assert.Equal(["listFlights", "hold", "message"], _connection.Sent.Select(s => s.Cmd));
+        var hold = _connection.ArgsOf("hold")!;
+        Assert.Equal(90, (double?)hold["heading"]);
+        Assert.Equal(6096.0, (double)hold["altitude"]!, precision: 1);
+        Assert.Equal(
+            "Enfield 1-1 (group \"Enfield-1\") is holding at its present position, inbound heading 090, at 20,000 ft MSL. " +
+            "Shown on screen in DCS: \"ATC to Enfield 1-1: hold at present position, inbound heading 090, altitude 20,000 ft\"",
+            result);
+    }
+
+    [Fact]
+    public async Task Hold_SaysSo_WhenNoMagneticReferenceWasAvailable()
+    {
+        _connection.RespondWithData("hold", """{"altMsl":4572.0,"variation":null}""");
+
+        Assert.Contains("flown as true", await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Hold, heading: 90));
+    }
+
+    [Theory]
+    [InlineData(AtcAction.Orbit)]
+    [InlineData(AtcAction.Hold)]
+    public async Task OrbitAndHold_UseTheSameAddressingAndPlayerRules(AtcAction action)
+    {
+        Assert.StartsWith("Error: Callsign Colt 1-1 is shared", await Tools.SendAtcInstruction("Colt 1-1", action));
+        Assert.StartsWith("Colt 1-1 (group \"Player #001\") is the player's flight, so it wasn't tasked.",
+            await Tools.SendAtcInstruction("Player #001", action));
+        Assert.DoesNotContain(_connection.Sent, s => s.Cmd is "orbit" or "hold");
     }
 
     [Fact]
@@ -96,7 +149,7 @@ public class AtcToolsTests
 
         string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Vectors, heading: 270);
 
-        Assert.Equal("Error: DCS didn't vector Enfield 1-1: no group named Enfield-1", result);
+        Assert.Equal("Error: DCS didn't task Enfield 1-1: no group named Enfield-1", result);
         Assert.DoesNotContain(_connection.Sent, s => s.Cmd == "message");
     }
 
@@ -120,7 +173,7 @@ public class AtcToolsTests
 
         Assert.Equal(["message"], _connection.Sent.Select(s => s.Cmd));
         Assert.Equal("ClearToLand doesn't task aircraft yet, so no flight was moved. " +
-                     "Shown on screen in DCS: \"ATC to Enfield 1-1: cleared to land, fly heading 360\"", result);
+                     "Shown on screen in DCS: \"ATC to Enfield 1-1: cleared to land\"", result);
     }
 
     [Fact]
@@ -129,7 +182,7 @@ public class AtcToolsTests
         // Was Lua injection (#4): the callsign went into Lua source. Now it's only ever JSON data.
         const string callsign = "x\", 10) os.exit() --\n\\";
 
-        await Tools.SendAtcInstruction(callsign, AtcAction.Orbit);
+        await Tools.SendAtcInstruction(callsign, AtcAction.ClearToLand);
 
         Assert.StartsWith($"ATC to {callsign}:", (string?)_connection.ArgsOf("message")!["text"]);
     }
@@ -139,7 +192,7 @@ public class AtcToolsTests
     {
         _connection.Responses["message"] = DcsCommandResult.Failed("mission scripting isn't enabled");
 
-        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.Orbit);
+        string result = await Tools.SendAtcInstruction("Enfield 1-1", AtcAction.ClearToLand);
 
         Assert.EndsWith("The on-screen message failed: mission scripting isn't enabled", result);
     }
