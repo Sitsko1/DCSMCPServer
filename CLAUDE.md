@@ -110,6 +110,22 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
   - `IAgentIntegration` + one class per agent (`AgentIntegrations.cs`).
   - `ClaudeCodeRegistration` builds the `claude mcp` arguments; `ClaudeCodeRegistrar` runs them.
   - `ClaudeDesktopConfig` — edits Claude Desktop's config JSON.
+  - `ClaudeCodeChat` — the in-app chat's engine (#16): one `claude -p` turn per message,
+    `--resume` for follow-ups, streamed as `ChatEvent`s parsed from `--output-format stream-json`.
+    **Each run is isolated to this app:**
+    - `--tools ""`: no built-in tools;
+    - `--restricted`: no user, project or local settings, so no plugins or hooks;
+    - `--strict-mcp-config` + `--mcp-config <file>`: only our server;
+    - `--disable-slash-commands`: no skills;
+    - a short `--system-prompt`;
+    - it runs in an empty app-private working folder (no CLAUDE.md), with stdin closed (else
+      `claude -p` waits 3 s).
+
+    Without the isolation, a probe loaded every installed MCP server and plugin: about 167k
+    context tokens (≈$1.34) for one sentence, vs about $0.01. The bearer key is in the per-turn
+    config file in that private folder, deleted afterwards, **never on the command line** (other
+    local processes can read command lines). Flags verified against Claude Code 2.1.288; re-check
+    `claude --help` when upgrading.
   - The app passes the URL and key in as `Func<string>`s.
 - **`src/DCS.AIAutomator`** — WinUI 3 app, MSIX-packaged. `App.xaml.cs` creates the
   `DcsMcpBridgeHost` and `NotificationService`, starts the bridge on a background task with
@@ -129,6 +145,11 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     connect/disconnect to see: ACTIVE means a request in the last 60 s, then IDLE. AUTH FAILED
     means a recent 401 with no success since. The host records successes in a message filter
     (name from `clientInfo`) and 401s in the bearer middleware. A 1 s timer re-renders the lamp.
+  - `ChatWindow` — the chat (#16), opened from the main window's chat button. It renders the
+    `ClaudeCodeChat` event stream in code-behind: user and assistant messages, plus tool calls
+    shown inline with their results. Stop kills the turn; New chat drops the session. It never logs
+    prompts, replies or tool arguments, only each turn's outcome and cost. Confirmation, history
+    and lessons come in later slices (see #16).
   - `SettingsWindow` — nothing persists until **Save**, which writes via `SettingsService`
     and calls `App.ApplySettingsAsync(restartBridge)`. The bridge (and so the DCS connection)
     restarts only when the MCP port or DCS host/port changed; everything else, including

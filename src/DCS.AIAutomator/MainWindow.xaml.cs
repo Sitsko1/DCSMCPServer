@@ -84,6 +84,8 @@ public sealed partial class MainWindow : Window
         ((App)Application.Current!).OpenSettingsWindow();
     }
 
+    private void OnChatClicked(object? sender, RoutedEventArgs e) => ((App)Application.Current!).OpenChatWindow();
+
     private void OnHistoryClicked(object? sender, RoutedEventArgs e)
     {
         var dialog = new NotificationHistoryDialog(_notifications)

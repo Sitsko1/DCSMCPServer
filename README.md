@@ -59,6 +59,12 @@ kept, and a `.bak` is made. Decline, and everything else still works; only messa
 If the DCS indicator shows **AUTH FAILED** or **SCRIPT OUTDATED** (the deployed script is from
 another version of this app), redeploy and restart DCS.
 
+**Chat:** the main window's chat button opens a chat with Claude through your installed **Claude
+Code** (your own Claude login; no API key). Ask about your flight or give ATC instructions in
+plain language, and tool calls show up inline. Each turn can use only this app's DCS tools, not
+your other Claude Code tools or MCP servers. Your messages and the DCS state the tools read are
+sent to Claude.
+
 **Reporting a bug:** Settings → Diagnostics → **Export logs…** saves the app's log files plus a
 short `about.txt` (versions, ports, connection states, detected AI agents) as one zip. Attach it to
 your issue. It contains no API keys or secrets.

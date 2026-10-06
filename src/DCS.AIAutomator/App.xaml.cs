@@ -17,6 +17,7 @@ public partial class App : Application
     private readonly SettingsService _settings = new();
     private Window? _window;
     private SettingsWindow? _settingsWindow;
+    private ChatWindow? _chatWindow;
     private DcsMcpBridgeHost? _bridgeHost;
     private NotificationService? _notifications;
     private BridgeStatusNotifier? _statusNotifier;
@@ -60,6 +61,7 @@ public partial class App : Application
         _currentTheme = theme;
         ApplyTheme(_window);
         ApplyTheme(_settingsWindow);
+        ApplyTheme(_chatWindow);
     }
 
     private void ApplyTheme(Window? window)
@@ -134,6 +136,23 @@ public partial class App : Application
             ApplyTheme(_settingsWindow);
         }
         _settingsWindow.Activate();
+    }
+
+    /// <summary>The in-app chat (#16). One window; reopening brings it to the front.</summary>
+    public void OpenChatWindow()
+    {
+        if (_bridgeHost is null) return;
+        if (_chatWindow is null)
+        {
+            _chatWindow = new ChatWindow(_bridgeHost.Status, () => McpUrl, () => McpApiKey,
+                // App-private and empty: holds the per-turn MCP config (with the key) and is claude's
+                // working directory, so no project CLAUDE.md is picked up.
+                Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Chat"),
+                _logging!.Provider.CreateLogger("DCS.AIAutomator.Chat"));
+            _chatWindow.Closed += (_, _) => _chatWindow = null;
+            ApplyTheme(_chatWindow);
+        }
+        _chatWindow.Activate();
     }
 
     /// <summary>The MCP API key MCP clients must send as a bearer token. Shown in Settings; never logged.</summary>
