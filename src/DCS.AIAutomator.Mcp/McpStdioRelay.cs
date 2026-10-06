@@ -41,6 +41,17 @@ public static class McpStdioRelay
             {
                 try
                 {
+                    // An initialize starts a new MCP session, so give it a fresh HTTP session too. A
+                    // client that probed with server/discover (2026-07-28) and then fell back to
+                    // initialize would otherwise get the probe's version, which the SDK's transport
+                    // cached from the probe's reply, sent as the initialize's MCP-Protocol-Version
+                    // header; the app rejects that mismatch (#36). Transport plumbing only: the
+                    // message itself is still forwarded unchanged.
+                    if (appSide is not null && message is JsonRpcRequest { Method: RequestMethods.Initialize })
+                    {
+                        await appSide.DisposeAsync(); // its pump ends with "transport closed", which is expected
+                        appSide = null;
+                    }
                     if (appSide is null)
                     {
                         appSide = await http.ConnectAsync(cancellationToken);

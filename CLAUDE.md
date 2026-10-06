@@ -293,7 +293,11 @@ for a new agent (OpenAI/Gemini come later); the page needs no change.
     a stdio transport and `HttpClientTransport` (+ bearer header), hosts no tools and has no DCS
     logic. That's what keeps it from being the deleted stdio-exe bridge. If the app is down or
     rejects the key, each request gets a JSON-RPC error saying so (no hang). stdout carries only
-    JSON-RPC; the relay logs to its own `dcs-aiautomator-relay-*.clef` file.
+    JSON-RPC; the relay logs to its own `dcs-aiautomator-relay-*.clef` file. Each `initialize`
+    gets a fresh HTTP session (#36): an SDK client probes with `server/discover` (2026-07-28) and
+    falls back to `initialize` (2025-11-25) when the probe times out. The SDK's HTTP transport
+    caches the probe's version from a successful reply and would send it as the `initialize`'s
+    `MCP-Protocol-Version` header, which the app rejects.
   - **MSIX AppData virtualization:** a packaged app's *edits to existing* files under
     `%APPDATA%` go to the real file, but files it *creates* there are redirected to a private,
     per-package copy that other apps can't see. So Connect refuses when Claude Desktop has no
