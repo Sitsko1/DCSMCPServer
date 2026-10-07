@@ -63,7 +63,9 @@ another version of this app), redeploy and restart DCS.
 Code** (your own Claude login; no API key). It docks beside the readouts (the window widens), and
 you can pop it out into its own window and back in without losing the conversation. Ask about your flight or give ATC instructions in
 plain language, and tool calls show up inline. Each turn can use only this app's DCS tools, not
-your other Claude Code tools or MCP servers. Your messages and the DCS state the tools read are
+your other Claude Code tools or MCP servers. Anything that changes DCS (an ATC instruction) shows an
+**Approve / Deny** card first. Reading data never asks. You can turn confirmation off in Settings →
+AI agents. Your messages and the DCS state the tools read are
 sent to Claude.
 
 **DCS controls:** the DCS card on the main window has **Start DCS** / **Quit DCS** (with a

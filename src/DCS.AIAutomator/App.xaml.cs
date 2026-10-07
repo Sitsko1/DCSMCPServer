@@ -154,7 +154,8 @@ public partial class App : Application
         // App-private and empty: holds the per-turn MCP config (with the key) and is claude's
         // working directory, so no project CLAUDE.md is picked up.
         Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Chat"),
-        _logging!.Provider.CreateLogger("DCS.AIAutomator.Chat"));
+        _logging!.Provider.CreateLogger("DCS.AIAutomator.Chat"),
+        () => _settings.ChatConfirmDcsChanges);
 
     /// <summary>The main window's chat button: opens the chat where it was last (docked the first
     /// time), closes the docked panel, or brings the popped-out window to the front.</summary>

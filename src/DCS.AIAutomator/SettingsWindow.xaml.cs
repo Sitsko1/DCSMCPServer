@@ -46,6 +46,7 @@ public sealed partial class SettingsWindow : Window
         DcsPortBox.Value = _settings.DcsPort;
         InstallPathBox.Text = _settings.DcsInstallPath;
         MultithreadedSwitch.IsOn = _settings.DcsMultithreaded;
+        ChatConfirmSwitch.IsOn = _settings.ChatConfirmDcsChanges;
         SavedGamesPathBox.Text = _settings.DcsSavedGamesPath;
         ToastDurationBox.Value = _settings.ToastDurationSeconds;
         UnitsBox.SelectedIndex = _settings.Units == UnitSystem.Metric ? 1 : 0;
@@ -430,6 +431,7 @@ public sealed partial class SettingsWindow : Window
         if (_settings.DcsPort != (int)DcsPortBox.Value) changed.Add(nameof(SettingsService.DcsPort));
         if (_settings.DcsInstallPath != InstallPathBox.Text) changed.Add(nameof(SettingsService.DcsInstallPath));
         if (_settings.DcsMultithreaded != MultithreadedSwitch.IsOn) changed.Add(nameof(SettingsService.DcsMultithreaded));
+        if (_settings.ChatConfirmDcsChanges != ChatConfirmSwitch.IsOn) changed.Add(nameof(SettingsService.ChatConfirmDcsChanges));
         if (_settings.DcsSavedGamesPath != SavedGamesPathBox.Text) changed.Add(nameof(SettingsService.DcsSavedGamesPath));
         if (_settings.ToastDurationSeconds != (int)ToastDurationBox.Value) changed.Add(nameof(SettingsService.ToastDurationSeconds));
         if (_settings.Units != newUnits) changed.Add(nameof(SettingsService.Units));
@@ -441,6 +443,7 @@ public sealed partial class SettingsWindow : Window
         _settings.DcsPort = (int)DcsPortBox.Value;
         _settings.DcsInstallPath = InstallPathBox.Text;
         _settings.DcsMultithreaded = MultithreadedSwitch.IsOn;
+        _settings.ChatConfirmDcsChanges = ChatConfirmSwitch.IsOn; // read at the start of each chat turn
         _settings.DcsSavedGamesPath = SavedGamesPathBox.Text;
         _settings.ToastDurationSeconds = (int)ToastDurationBox.Value;
         _settings.Units = newUnits;

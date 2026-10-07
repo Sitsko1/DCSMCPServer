@@ -192,6 +192,13 @@
                 <StackPanel x:Name="AgentsPanel" Spacing="12" Visibility="Collapsed">
                     <TextBlock Text="Connect AI agents installed on this PC to this app's MCP server. Only agents found on this machine are listed." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" />
                     <StackPanel x:Name="AgentsList" Spacing="12" />
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Chat" Style="{StaticResource SettingsCardTitleStyle}" />
+                            <TextBlock Text="When the chat wants to do something that changes DCS (e.g. an ATC instruction), it shows an Approve / Deny card first. Reading data (aircraft state, AI flights) never asks." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" />
+                            <ToggleSwitch x:Name="ChatConfirmSwitch" OnContent="Confirm actions that change DCS" OffContent="Run them without asking" />
+                        </StackPanel>
+                    </Border>
                     <TextBlock x:Name="NoAgentsText" Text="No supported AI agents were found on this PC (supported: Claude Code, Claude Desktop)." Style="{StaticResource SettingsCardDescriptionStyle}" TextWrapping="Wrap" Visibility="Collapsed" />
                 </StackPanel>
 
