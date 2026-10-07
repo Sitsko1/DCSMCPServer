@@ -93,7 +93,25 @@ public sealed partial class MainWindow : Window
         ((App)Application.Current!).OpenSettingsWindow();
     }
 
-    private void OnChatClicked(object? sender, RoutedEventArgs e) => ((App)Application.Current!).OpenChatWindow();
+    private void OnChatClicked(object? sender, RoutedEventArgs e) => ((App)Application.Current!).ToggleChat();
+
+    /// <summary>Width the main window grows by while the chat is docked beside the readouts (#48).</summary>
+    private const int ChatDockWidth = 460;
+
+    /// <summary>Docks <paramref name="view"/> beside the readouts, widening the window; null undocks and restores the width.</summary>
+    public void ShowChatDock(ChatView? view)
+    {
+        bool wasDocked = ChatDock.Child is not null;
+        ChatDock.Child = view;
+        ChatDock.Visibility = view is null ? Visibility.Collapsed : Visibility.Visible;
+        ChatColumn.Width = new GridLength(view is null ? 0 : ChatDockWidth);
+        if (wasDocked != (view is not null))
+        {
+            SizeInt32 size = AppWindow.Size;
+            AppWindow.Resize(new SizeInt32(size.Width + (view is null ? -ChatDockWidth : ChatDockWidth), size.Height));
+        }
+        view?.FocusPrompt();
+    }
 
     private void OnHistoryClicked(object? sender, RoutedEventArgs e)
     {

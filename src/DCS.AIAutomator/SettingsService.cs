@@ -51,6 +51,20 @@ public sealed class SettingsService
         set => _values.Values[nameof(DcsMultithreaded)] = value.ToString();
     }
 
+    /// <summary>Whether the chat was last popped out into its own window (else docked in the main window, the default).</summary>
+    public bool ChatPoppedOut
+    {
+        get => GetString(nameof(ChatPoppedOut), bool.FalseString) == bool.TrueString;
+        set => _values.Values[nameof(ChatPoppedOut)] = value.ToString();
+    }
+
+    /// <summary>The popped-out chat window's last bounds, "x,y,width,height" in screen pixels; empty if never saved.</summary>
+    public string ChatWindowBounds
+    {
+        get => GetString(nameof(ChatWindowBounds), string.Empty);
+        set => _values.Values[nameof(ChatWindowBounds)] = value;
+    }
+
     public string DcsSavedGamesPath
     {
         get => GetString(nameof(DcsSavedGamesPath), DefaultSavedGamesPath());
