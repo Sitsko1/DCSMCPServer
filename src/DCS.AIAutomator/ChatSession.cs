@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using DCS.AIAutomator.Agents;
 using DCS.AIAutomator.Core;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,17 @@ public sealed class ChatToolItem(string tool, string inputJson) : ChatItem
     public bool IsError { get; set; }
 }
 
+public enum ChatPermissionState { Pending, Approved, Denied }
+
+/// <summary>A DCS-changing tool call waiting for (or answered with) the pilot's Approve / Deny.</summary>
+public sealed class ChatPermissionItem(string tool, string inputJson) : ChatItem
+{
+    public string Tool { get; } = tool;
+    public string InputJson { get; } = inputJson;
+    public ChatPermissionState State { get; set; } = ChatPermissionState.Pending;
+    internal TaskCompletionSource<ChatPermissionDecision> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+}
+
 public sealed class ChatNoteItem(string text, bool isError) : ChatItem
 {
     public string Text { get; } = text;
@@ -50,12 +62,16 @@ public sealed class ChatSession
     private readonly Func<string> _apiKey;
     private readonly string _workDirectory;
     private readonly ILogger _log;
+    private readonly Func<bool> _confirmDcsChanges;
     private readonly List<ChatItem> _items = new();
     private string? _sessionId;
     private CancellationTokenSource? _running;
 
-    public ChatSession(BridgeStatus status, Func<string> mcpUrl, Func<string> apiKey, string workDirectory, ILogger log)
+    /// <param name="confirmDcsChanges">The setting, read at the start of each turn: DCS-changing tool calls need an Approve click.</param>
+    public ChatSession(BridgeStatus status, Func<string> mcpUrl, Func<string> apiKey, string workDirectory, ILogger log,
+        Func<bool> confirmDcsChanges)
     {
+        _confirmDcsChanges = confirmDcsChanges;
         _status = status;
         _mcpUrl = mcpUrl;
         _apiKey = apiKey;
@@ -73,6 +89,29 @@ public sealed class ChatSession
     public event Action? RunningChanged;
 
     public void Stop() => _running?.Cancel();
+
+    /// <summary>The pilot's Approve / Deny on a pending tool call; the waiting turn continues with it.</summary>
+    public void Decide(ChatPermissionItem item, bool allow)
+    {
+        if (item.State != ChatPermissionState.Pending) return;
+        item.State = allow ? ChatPermissionState.Approved : ChatPermissionState.Denied;
+        ItemChanged?.Invoke(item);
+        _log.LogInformation("Chat tool call {Tool} {Decision} by the pilot", item.Tool, allow ? "approved" : "denied");
+        item.Answer.TrySetResult(allow
+            ? new ChatPermissionDecision(true)
+            : new ChatPermissionDecision(false, "The pilot denied this action. Don't retry it unless the pilot asks again."));
+    }
+
+    // Called by the engine for each permission request: show a card, wait for the click (or Stop).
+    private async Task<ChatPermissionDecision> AskAsync(ChatPermissionRequest request, CancellationToken cancellationToken)
+    {
+        var item = new ChatPermissionItem(request.Tool, request.InputJson);
+        Add(item);
+        using (cancellationToken.Register(() => item.Answer.TrySetCanceled(cancellationToken)))
+        {
+            return await item.Answer.Task;
+        }
+    }
 
     public void NewChat()
     {
@@ -102,7 +141,8 @@ public sealed class ChatSession
         try
         {
             await foreach (ChatEvent chatEvent in ClaudeCodeChat.RunAsync(
-                prompt, _mcpUrl(), _apiKey(), _workDirectory, _sessionId, cancellationToken: running.Token))
+                prompt, _mcpUrl(), _apiKey(), _workDirectory, _sessionId, _confirmDcsChanges(), AskAsync,
+                cancellationToken: running.Token))
             {
                 switch (chatEvent)
                 {

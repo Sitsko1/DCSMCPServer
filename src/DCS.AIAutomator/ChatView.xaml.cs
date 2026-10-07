@@ -155,6 +155,16 @@ public sealed partial class ChatView : UserControl
                 };
                 element = block;
                 break;
+            case ChatPermissionItem permission:
+                block = new TextBlock
+                {
+                    FontFamily = (FontFamily)Application.Current.Resources["MonoFont"],
+                    FontSize = 12,
+                    TextWrapping = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true,
+                };
+                element = PermissionCard(permission, block);
+                break;
             default: // ChatAssistantItem
                 block = new TextBlock { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
                 element = block;
@@ -173,12 +183,43 @@ public sealed partial class ChatView : UserControl
             case ChatAssistantItem reply:
                 block.Text = reply.Text;
                 break;
+            case ChatPermissionItem permission:
+                block.Text = $"Claude wants to run {permission.Tool}" +
+                             (permission.InputJson is "{}" or "" ? "" : $"\n{permission.InputJson}") +
+                             permission.State switch
+                             {
+                                 ChatPermissionState.Approved => "\n✓ Approved",
+                                 ChatPermissionState.Denied => "\n✗ Denied",
+                                 _ => "",
+                             };
+                if (block.Parent is StackPanel { Children: [_, StackPanel buttons] })
+                    buttons.Visibility = permission.State == ChatPermissionState.Pending ? Visibility.Visible : Visibility.Collapsed;
+                break;
             case ChatToolItem tool:
                 block.Text = $"⚙ {tool.Tool}{(tool.InputJson is "{}" or "" ? "" : " " + tool.InputJson)}" +
                              (tool.Result is null ? "" : $"\n  {(tool.IsError ? "✗" : "→")} {tool.Result.Split('\n', 2)[0]}");
                 block.Foreground = Brush(tool.IsError ? "FaultBrush" : "TextSecondaryBrush");
                 break;
         }
+    }
+
+    // A card around the request text, with Approve / Deny until the pilot answers.
+    private UIElement PermissionCard(ChatPermissionItem item, TextBlock text)
+    {
+        var approve = new Button { Content = "Approve", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        var deny = new Button { Content = "Deny" };
+        approve.Click += (_, _) => _session.Decide(item, allow: true);
+        deny.Click += (_, _) => _session.Decide(item, allow: false);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { approve, deny } };
+        return new Border
+        {
+            Padding = new Thickness(12, 10, 12, 10),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = Brush("WarningBrush"),
+            Background = Brush("SurfaceBrush"),
+            Child = new StackPanel { Spacing = 8, Children = { text, buttons } },
+        };
     }
 
     private void ScrollToEnd()

@@ -51,6 +51,13 @@ public sealed class SettingsService
         set => _values.Values[nameof(DcsMultithreaded)] = value.ToString();
     }
 
+    /// <summary>Chat tool calls that change DCS (e.g. ATC instructions) need an Approve click first (#16). On by default.</summary>
+    public bool ChatConfirmDcsChanges
+    {
+        get => GetString(nameof(ChatConfirmDcsChanges), bool.TrueString) == bool.TrueString;
+        set => _values.Values[nameof(ChatConfirmDcsChanges)] = value.ToString();
+    }
+
     /// <summary>Whether the chat was last popped out into its own window (else docked in the main window, the default).</summary>
     public bool ChatPoppedOut
     {
