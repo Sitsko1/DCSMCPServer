@@ -155,11 +155,21 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     connect/disconnect to see: ACTIVE means a request in the last 60 s, then IDLE. AUTH FAILED
     means a recent 401 with no success since. The host records successes in a message filter
     (name from `clientInfo`) and 401s in the bearer middleware. A 1 s timer re-renders the lamp.
-  - `ChatWindow` — the chat (#16), opened from the main window's chat button. It renders the
-    `ClaudeCodeChat` event stream in code-behind: user and assistant messages, plus tool calls
-    shown inline with their results. Stop kills the turn; New chat drops the session. It never logs
-    prompts, replies or tool arguments, only each turn's outcome and cost. Confirmation, history
-    and lessons come in later slices (see #16).
+  - **Chat** (#16, #48): one conversation, **`ChatSession`**, owned by `App`. It runs the
+    `ClaudeCodeChat` turns and keeps the transcript items and the Claude Code session id.
+    - **`ChatView`** (a UserControl) renders a session from its items and change events: user and
+      assistant messages, plus tool calls inline with their results. Stop kills the turn; New chat
+      drops the session.
+    - It's shown **docked** in the main window (an extra grid column; the window widens by 460 px
+      and narrows back) or **popped out** in `ChatWindow`. Pop out / pop in, or closing the popped
+      window, create a new `ChatView` over the same session, so the transcript and a reply still
+      streaming carry over. Moving a live XAML element between windows isn't relied on.
+    - It opens docked the first time; after that it remembers docked vs popped out and the popped
+      window's bounds (`SettingsService.ChatPoppedOut`/`ChatWindowBounds`, restored only if a
+      monitor still shows them).
+    - The docked panel closes only with its close button.
+    - It never logs prompts, replies or tool arguments, only each turn's outcome and cost.
+      Confirmation, history and lessons come in later #16 slices.
   - `SettingsWindow` — nothing persists until **Save**, which writes via `SettingsService`
     and calls `App.ApplySettingsAsync(restartBridge)`. The bridge (and so the DCS connection)
     restarts only when the MCP port or DCS host/port changed; everything else, including

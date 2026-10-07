@@ -34,6 +34,13 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <!-- Column 1 is the docked chat (#48): 0 wide until docked, when the window widens by it. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition x:Name="ChatColumn" Width="0" />
+        </Grid.ColumnDefinitions>
+        <Border x:Name="ChatDock" Grid.Column="1" Grid.RowSpan="4" Visibility="Collapsed"
+                BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="1,0,0,0" />
         <!-- Toolbar: settings + theme toggle, styled as chromeless glass icon buttons -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
             <Button Style="{StaticResource GlassIconGhostButtonStyle}" Click="OnChatClicked" ToolTipService.ToolTip="Chat with Claude">
