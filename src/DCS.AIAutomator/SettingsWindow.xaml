@@ -112,6 +112,8 @@
                             </Grid>
                             <TextBlock x:Name="InstallPathError" Style="{StaticResource SettingsCardDescriptionStyle}"
                                        Foreground="{ThemeResource FaultBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
+                            <ToggleSwitch x:Name="MultithreadedSwitch" Header="Start DCS launches"
+                                          OnContent="Multi-threaded (bin-mt\DCS.exe)" OffContent="Classic (bin\DCS.exe)" />
                         </StackPanel>
                     </Border>
 
