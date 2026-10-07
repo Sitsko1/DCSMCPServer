@@ -60,7 +60,8 @@ If the DCS indicator shows **AUTH FAILED** or **SCRIPT OUTDATED** (the deployed 
 another version of this app), redeploy and restart DCS.
 
 **Chat:** the main window's chat button opens a chat with Claude through your installed **Claude
-Code** (your own Claude login; no API key). Ask about your flight or give ATC instructions in
+Code** (your own Claude login; no API key). It docks beside the readouts (the window widens), and
+you can pop it out into its own window and back in without losing the conversation. Ask about your flight or give ATC instructions in
 plain language, and tool calls show up inline. Each turn can use only this app's DCS tools, not
 your other Claude Code tools or MCP servers. Your messages and the DCS state the tools read are
 sent to Claude.
