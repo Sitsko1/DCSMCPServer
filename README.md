@@ -65,6 +65,11 @@ plain language, and tool calls show up inline. Each turn can use only this app's
 your other Claude Code tools or MCP servers. Your messages and the DCS state the tools read are
 sent to Claude.
 
+**DCS controls:** the DCS card on the main window has **Start DCS** / **Quit DCS** (with a
+confirmation; it quits cleanly, and offers a force-quit only if DCS doesn't respond) and
+**Pause** / **Resume** during a mission. Start launches the multi-threaded DCS by default; switch to
+the classic build in Settings → Paths. Standalone installs only.
+
 **Reporting a bug:** Settings → Diagnostics → **Export logs…** saves the app's log files plus a
 short `about.txt` (versions, ports, connection states, detected AI agents) as one zip. Attach it to
 your issue. It contains no API keys or secrets.

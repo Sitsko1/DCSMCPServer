@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using DCS.AIAutomator.Core;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -27,6 +28,9 @@ public sealed partial class MainWindow : Window
 
     private readonly BridgeStatus _status;
     private readonly NotificationService _notifications;
+    private readonly SettingsService _settings;
+    private bool _dcsRunning;
+    private bool _dcsBusy; // a start or quit is in progress
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly bool _animationsEnabled;
 
@@ -36,6 +40,7 @@ public sealed partial class MainWindow : Window
 
         _status = status;
         _notifications = notifications;
+        _settings = settings;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _animationsEnabled = new UISettings().AnimationsEnabled;
 
@@ -56,7 +61,11 @@ public sealed partial class MainWindow : Window
         // ACTIVE fades to IDLE (and AUTH FAILED expires) with time alone, with no status change.
         DispatcherQueueTimer clientsTimer = _dispatcherQueue.CreateTimer();
         clientsTimer.Interval = TimeSpan.FromSeconds(1);
-        clientsTimer.Tick += (_, _) => RenderClients();
+        clientsTimer.Tick += (_, _) =>
+        {
+            RenderClients();
+            RenderDcsControls(); // DCS starting or exiting changes no status: poll the process
+        };
         clientsTimer.Start();
         Closed += (_, _) => clientsTimer.Stop();
 
@@ -143,6 +152,106 @@ public sealed partial class MainWindow : Window
         DcsStateText.Text = label;
         DcsStateText.Foreground = new SolidColorBrush(color);
         DcsAddressText.Text = _status.DcsAuthFailed || _status.DcsScriptOutdated ? "Redeploy Lua scripts, restart DCS" : _status.DcsEndpoint;
+        RenderDcsControls(pollProcess: false); // status changes arrive ~5 Hz; the 1 s timer polls the process
+    }
+
+    // Start/Quit follows the DCS *process* (running or not), Pause the connection's mission state.
+    private void RenderDcsControls(bool pollProcess = true)
+    {
+        if (pollProcess) _dcsRunning = DcsProcess.IsRunning();
+        DcsStartQuitButton.Content = _dcsRunning ? "Quit DCS" : "Start DCS";
+        DcsStartQuitButton.IsEnabled = !_dcsBusy;
+        DcsPauseButton.Content = _status.DcsPaused ? "Resume" : "Pause";
+        DcsPauseButton.IsEnabled = _status.DcsConnected && _status.CurrentMission is not null && !_status.DcsNotResponding;
+    }
+
+    private async void OnDcsStartQuitClicked(object sender, RoutedEventArgs e)
+    {
+        _dcsBusy = true;
+        RenderDcsControls();
+        try
+        {
+            if (_dcsRunning) await QuitDcsAsync();
+            else StartDcs();
+        }
+        finally
+        {
+            _dcsBusy = false;
+            RenderDcsControls();
+        }
+    }
+
+    private void StartDcs()
+    {
+        var (exe, error) = DcsProcess.Executable(_settings.DcsInstallPath, _settings.DcsMultithreaded);
+        if (exe is null)
+        {
+            _notifications.Show("Can't start DCS", error!, NotificationSeverity.Error);
+            return;
+        }
+        try
+        {
+            DcsProcess.Start(exe);
+            _notifications.Show("Starting DCS", "DCS connects to this app once a mission is running.", NotificationSeverity.Info);
+        }
+        catch (Exception ex)
+        {
+            _notifications.Show("Can't start DCS", ex.Message, NotificationSeverity.Error);
+        }
+    }
+
+    // Clean first (Sim.exitProcess through the Hooks script); force-kill only after a second confirmation.
+    private async Task QuitDcsAsync()
+    {
+        if (!await ConfirmAsync("Quit DCS?", "The current mission ends, and unsaved work in DCS (e.g. the mission editor) is lost.", "Quit DCS"))
+            return;
+
+        string reason;
+        if (_status.DcsConnected && ((App)Application.Current!).DcsConnection is { } connection)
+        {
+            DcsCommandResult result = await connection.QuitAsync();
+            if (result.Ok && await DcsProcess.WaitForExitAsync(TimeSpan.FromSeconds(15)))
+            {
+                _notifications.Show("DCS closed", "DCS exited cleanly.", NotificationSeverity.Info);
+                return;
+            }
+            reason = result.Ok ? "DCS hasn't exited after 15 seconds." : $"DCS didn't accept the quit: {result.Error}";
+        }
+        else
+        {
+            reason = "DCS isn't connected to this app, so it can't be asked to exit cleanly.";
+        }
+
+        if (!DcsProcess.IsRunning()) return; // it exited after all
+        if (!await ConfirmAsync("Force-quit DCS?", $"{reason} Force-quitting skips DCS's own shutdown.", "Force quit"))
+            return;
+        DcsProcess.Kill();
+        _notifications.Show("DCS force-quit", "DCS was ended.", NotificationSeverity.Warning);
+    }
+
+    private async void OnDcsPauseClicked(object sender, RoutedEventArgs e)
+    {
+        if (((App)Application.Current!).DcsConnection is not { } connection) return;
+        DcsPauseButton.IsEnabled = false;
+        DcsCommandResult result = await connection.SetPausedAsync(!_status.DcsPaused);
+        if (!result.Ok) _notifications.Show(_status.DcsPaused ? "Can't resume DCS" : "Can't pause DCS", result.Error ?? "", NotificationSeverity.Error);
+        RenderDcsControls(); // the label follows the paused line DCS sends back
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string message, string confirm)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = ((FrameworkElement)Content).ActualTheme,
+            Title = title,
+            Content = message,
+            PrimaryButtonText = confirm,
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
     private void RenderClients()

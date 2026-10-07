@@ -65,6 +65,13 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
   - `LuaHooksScriptGenerator` / `LuaScriptDeployer` / `DcsPathValidator` — generate and
     deploy the DCS-side script (below). Pure string building / file I/O against a passed-in
     path.
+  - `DcsProcess` — starting, detecting and force-quitting the DCS *process* (#43), separate from
+    the connection. Standalone installs: `bin-mt\DCS.exe` (default) or `bin\DCS.exe`
+    (`SettingsService.DcsMultithreaded`). A clean quit is `DcsCommands.QuitAsync` → the script's
+    `quit` handler, which replies and *then* calls `Sim.exitProcess()`. Killing the process is only
+    the second-confirmation fallback. Pause/Resume is `DcsCommands.SetPausedAsync` →
+    `Sim.setPause`. These are UI-only, not MCP tools (maintainer decision). Active Pause has no API
+    and was dropped.
   - `Secrets`, `McpClientActivity` (the AI CLIENTS lamp's state), `MissionInfo`,
     `AircraftState`.
 - **`src/DCS.AIAutomator.Mcp`** — class library, the MCP server.
@@ -139,7 +146,10 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     read from the active `ThemeDictionaries` entry at runtime (no `{ThemeResource}` markup
     available in code-behind).
   - `MainWindow` — "glass cockpit" annunciator panel with a fixed palette, deliberately not
-    Mica. Below the mission readout, an "Aircraft status" `Expander` renders
+    Mica. The DCS card has **Start/Quit DCS** (following the process, polled on the 1 s timer,
+    never per status change) and **Pause/Resume** (enabled mid-mission, labelled from `DcsPaused`).
+    Quit asks for confirmation and quits cleanly; it offers a confirmed force-quit when DCS isn't
+    connected or hasn't exited within 15 s. Below the mission readout, an "Aircraft status" `Expander` renders
     `BridgeStatus.Aircraft` (~5 Hz) in `BridgeStatus.Units`. The **AI CLIENTS** lamp renders
     `BridgeStatus.McpClients` (`McpClientActivity`). The server is stateless, so there's no
     connect/disconnect to see: ACTIVE means a request in the last 60 s, then IDLE. AUTH FAILED

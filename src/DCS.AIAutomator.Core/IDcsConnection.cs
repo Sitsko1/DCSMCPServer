@@ -50,6 +50,18 @@ public static class DcsCommands
             ["seconds"] = Math.Clamp(seconds, 1, MaxMessageSeconds),
         }, cancellationToken);
 
+    /// <summary>Pauses or resumes the simulation (<c>Sim.setPause</c>; needs a running mission).</summary>
+    public static Task<DcsCommandResult> SetPausedAsync(
+        this IDcsConnection connection, bool paused, CancellationToken cancellationToken = default) =>
+        connection.SendCommandAsync("pause", new JsonObject { ["paused"] = paused }, cancellationToken);
+
+    /// <summary>
+    /// Asks DCS to exit cleanly (<c>Sim.exitProcess</c>). The script replies first, then exits, so
+    /// an ok means "exiting", not "exited": wait for the process with <see cref="DcsProcess"/>.
+    /// </summary>
+    public static Task<DcsCommandResult> QuitAsync(this IDcsConnection connection, CancellationToken cancellationToken = default) =>
+        connection.SendCommandAsync("quit", new JsonObject(), cancellationToken);
+
     // AI tasking: headings are magnetic degrees (0-360), altitudes meters MSL (null = the group's
     // current altitude). DCS refuses groups with a player in them.
 

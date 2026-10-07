@@ -250,6 +250,25 @@ public class LuaHooksScriptGeneratorTests
     }
 
     [Fact]
+    public void Generate_Pause_ValidatesAndUsesSimSetPause_InAMission()
+    {
+        string handler = FunctionBody("function mcpBridgeCommands.pause(c)");
+        Assert.Contains("type(c.paused) ~= \"boolean\"", handler);
+        Assert.Contains("not McpBridge.missionRunning", handler);
+        Assert.Contains("Sim.setPause(c.paused)", handler); // Sim_ControlAPI.md: server-side, i.e. the local game
+    }
+
+    [Fact]
+    public void Generate_Quit_RepliesFirst_ThenExitsDcs()
+    {
+        Assert.Contains("McpBridge.exitRequested = true", FunctionBody("function mcpBridgeCommands.quit(c)"));
+        string read = FunctionBody("local function mcpBridgeReadCommands()");
+        // The reply is sent inside mcpBridgeHandleCommand, so the exit must come after it.
+        Assert.True(read.IndexOf("mcpBridgeHandleCommand(line)") < read.IndexOf("Sim.exitProcess()"),
+            "DCS must exit only after the quit command's reply is sent");
+    }
+
+    [Fact]
     public void Generate_ReportsMissionScriptingNotEnabled_InsteadOfFailingSilently()
     {
         string run = FunctionBody("local function mcpBridgeRunInMission(code)");

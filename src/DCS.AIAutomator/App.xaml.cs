@@ -138,6 +138,9 @@ public partial class App : Application
         _settingsWindow.Activate();
     }
 
+    /// <summary>The DCS connection for the main window's DCS controls (#43); null while the bridge is stopped.</summary>
+    public IDcsConnection? DcsConnection => _bridgeHost?.Connection;
+
     /// <summary>The in-app chat (#16). One window; reopening brings it to the front.</summary>
     public void OpenChatWindow()
     {

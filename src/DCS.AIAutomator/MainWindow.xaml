@@ -79,6 +79,10 @@
                     </StackPanel>
                     <TextBlock x:Name="DcsStateText" Text="DISCONNECTED" Style="{StaticResource AnnunciatorStateStyle}" Foreground="{ThemeResource TextSecondaryBrush}" />
                     <TextBlock x:Name="DcsAddressText" Text="—" Style="{StaticResource SubtleMonoStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button x:Name="DcsStartQuitButton" Content="Start DCS" Click="OnDcsStartQuitClicked" FontSize="12" Padding="10,3" />
+                        <Button x:Name="DcsPauseButton" Content="Pause" Click="OnDcsPauseClicked" FontSize="12" Padding="10,3" IsEnabled="False" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

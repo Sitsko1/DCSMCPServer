@@ -44,6 +44,13 @@ public sealed class SettingsService
         set => _values.Values[nameof(DcsInstallPath)] = value;
     }
 
+    /// <summary>Start DCS launches the multi-threaded build (bin-mt\DCS.exe, the default) or the classic bin\DCS.exe.</summary>
+    public bool DcsMultithreaded
+    {
+        get => GetString(nameof(DcsMultithreaded), bool.TrueString) == bool.TrueString;
+        set => _values.Values[nameof(DcsMultithreaded)] = value.ToString();
+    }
+
     public string DcsSavedGamesPath
     {
         get => GetString(nameof(DcsSavedGamesPath), DefaultSavedGamesPath());

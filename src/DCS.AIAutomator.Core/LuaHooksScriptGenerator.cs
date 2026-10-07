@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 6;
+    public const int ProtocolVersion = 7;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -55,7 +55,7 @@ public static class LuaHooksScriptGenerator
         local MISSION_SCRIPTING_DISABLED = "mission scripting isn't enabled for DCS.AIAutomator: redeploy the Lua scripts, allow mission scripting when asked, and restart DCS"
         local McpBridge = {
             host = "{{dcsHost}}", port = {{dcsPort}}, server = nil, client = nil,
-            authenticated = false, clientSince = nil, missionRunning = false,
+            authenticated = false, clientSince = nil, missionRunning = false, exitRequested = false,
             missionName = "Unknown", terrain = "Unknown", displayNames = {}, lastSent = -1, lastHeartbeat = -1,
             logBuffer = {}, logLastSent = {}, logLastSentCount = 0,
         }
@@ -252,6 +252,12 @@ public static class LuaHooksScriptGenerator
                     end
                 elseif line then
                     mcpBridgeHandleCommand(line)
+                    if McpBridge.exitRequested then
+                        mcpBridgeLog("info", "exiting DCS at the app's request")
+                        pcall(function() Sim.exitProcess() end)
+                        McpBridge.exitRequested = false
+                        break
+                    end
                 elseif err == "closed" then
                     mcpBridgeDropClient()
                     break
@@ -296,6 +302,23 @@ public static class LuaHooksScriptGenerator
                 McpBridge.displayNames[typeName] = display
             end
             return display
+        end
+
+        -- cmd "pause" (paused): pause or resume the simulation (Sim.setPause; server-side, i.e. the
+        -- local game in single-player). The existing onSimulationPause/Resume lines report the result.
+        function mcpBridgeCommands.pause(c)
+            if type(c.paused) ~= "boolean" then return false, "paused must be true or false" end
+            if not McpBridge.missionRunning then return false, "no mission is running" end
+            local ok, err = pcall(function() Sim.setPause(c.paused) end)
+            if not ok then return false, "couldn't pause: " .. tostring(err) end
+            return true
+        end
+
+        -- cmd "quit": exit DCS cleanly (Sim.exitProcess). The reply goes out first; the exit happens
+        -- right after the command is handled (see mcpBridgeReadCommands).
+        function mcpBridgeCommands.quit(c)
+            McpBridge.exitRequested = true
+            return true
         end
 
         -- cmd "listFlights": every AI air group (lead unit's callsign, type, position) as JSON data.

@@ -34,6 +34,10 @@ public sealed class DcsMcpBridgeHost : IAsyncDisposable
 
     public BridgeStatus Status { get; }
 
+    /// <summary>The DCS connection while the bridge runs (null when stopped), for the app's own
+    /// controls (#43); it changes on a bridge restart, so resolve it each time it's used.</summary>
+    public IDcsConnection? Connection => _app?.Services.GetService<IDcsConnection>();
+
     private WebApplication? _app;
 
     // Read per request by the bearer check, so SetApiKey takes effect without a restart.

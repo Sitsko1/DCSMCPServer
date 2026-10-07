@@ -195,6 +195,7 @@ public class DcsConnectionTests : IAsyncLifetime
     [InlineData("""{"authOk":true,"protocol":3}""")] // before vectors (#29)
     [InlineData("""{"authOk":true,"protocol":4}""")] // before orbit/hold (#30)
     [InlineData("""{"authOk":true,"protocol":5}""")] // before land (#31)
+    [InlineData("""{"authOk":true,"protocol":6}""")] // before pause/quit (#43)
     [InlineData("""{"authOk":true,"protocol":999}""")]
     public async Task AuthOkWithAnotherProtocolVersion_IsScriptOutdated_NotConnected(string reply)
     {
