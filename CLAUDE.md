@@ -133,6 +133,16 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     config file in that private folder, deleted afterwards, **never on the command line** (other
     local processes can read command lines). Flags verified against Claude Code 2.1.288; re-check
     `claude --help` when upgrading.
+
+    **Confirmation (slice 2):** the prompt goes in on stdin (`--input-format stream-json`), and
+    permission prompts come back as `control_request`/`can_use_tool` on stdout
+    (`--permission-prompts host --permission-prompt-tool stdio`, the Agent SDK protocol). The app
+    answers with a `control_response`: `allow` + `updatedInput`, or `deny` + a message Claude sees
+    as the tool error. So no approval tool is exposed on the MCP server.
+    - **Read-only tools** (`ReadOnlyTools`) are always pre-allowed. `DcsChangingTools` are
+      pre-allowed only when the `ChatConfirmDcsChanges` setting (on by default) is off; otherwise
+      `ChatSession` shows an Approve/Deny card and the turn waits for it.
+    - Stdin closes after the result, or claude keeps waiting for input.
   - The app passes the URL and key in as `Func<string>`s.
 - **`src/DCS.AIAutomator`** — WinUI 3 app, MSIX-packaged. `App.xaml.cs` creates the
   `DcsMcpBridgeHost` and `NotificationService`, starts the bridge on a background task with
