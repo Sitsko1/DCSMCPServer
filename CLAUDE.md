@@ -83,7 +83,9 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     shown on screen (`DcsCommands.ShowMessageAsync`). Every action also tasks the flight: **Vectors**
     (#29), **Orbit** and **Hold** (#30), **ClearToLand** (#31):
     `AiFlight.Resolve` finds it among `ListFlightsAsync`'s flights (exact group name first, then
-    callsign in any form; a shared callsign or no match is an error listing candidates). Then
+    the flight's or lead's callsign in any form; a shared callsign or no match is an error listing
+    candidates). A wingman's callsign is an error naming its lead: DCS tasks whole groups, and
+    tasking a section or one aircraft needs a group split (#46's later slices, with #42). Then
     `VectorAsync` sets a 200 km route on the heading, `OrbitAsync` a `Circle` Orbit task over the
     present position, `HoldAsync` a `Race-Track` Orbit task whose `HoldLegMeters` inbound leg ends at
     the present position on the heading (both verified live: the E-2D circled its point, an F/A-18C
@@ -102,8 +104,10 @@ Agents and Mcp never reference each other. **Cross-cutting services:**
     `BridgeStatus` (units), so tests use `FakeDcsConnection` (per-command `Responses`).
   - `AircraftTools` — MCP tool `get_aircraft_state`; reads the latest snapshot from
     `BridgeStatus` only (never the connection).
-  - `FlightTools` — MCP tool `list_ai_flights` (#28): AI air groups from
+  - `FlightTools` — MCP tool `list_ai_flights` (#28, #46): AI air groups from
     `DcsCommands.ListFlightsAsync`, formatted with `AircraftStateFormatter` in the user's units.
+    One line per group (flight callsign "Enfield 1", group name, live/initial count, type,
+    coalition), then an indented line per live aircraft (callsign, position, altitude).
     Callsigns are shown spoken (`AiFlight.SpokenCallsign`: "Enfield11" → "Enfield 1-1").
   - `McpStdioRelay` — Claude Desktop's stdio ↔ HTTP pipe (#15, below).
   - `DcsLogging` — the Serilog pipeline (see Gotchas). Only the app uses it; it lives here so

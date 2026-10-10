@@ -177,7 +177,8 @@ public class LuaHooksScriptGeneratorTests
         foreach (string call in new[]
         {
             "coalition.getGroups(side, category)", "Group.Category.AIRPLANE", "Group.Category.HELICOPTER",
-            "lead:getCallsign()", "u:getPlayerName()", "coord.LOtoLL(p)", "lead:getTypeName()",
+            "g:getUnits()", "u:getCallsign()", "u:getPlayerName()", "coord.LOtoLL(p)", "u:getTypeName()",
+            "pcall(function() return g:getInitialSize() end)", // not in the stock docs: null if it fails
         })
         {
             Assert.Contains(call, Lua);

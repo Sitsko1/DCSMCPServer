@@ -282,7 +282,9 @@ public class DcsConnectionTests : IAsyncLifetime
 
         var (result, flights) = await sent;
         Assert.True(result.Ok);
-        Assert.Equal(new AiFlight("Enfield-1", "Enfield 1-1", "F/A-18C", "blue", 41.7, 41.7, 4572.0, false), Assert.Single(flights));
+        AiFlight flight = Assert.Single(flights);
+        Assert.Equal(("Enfield-1", "blue", 2), (flight.GroupName, flight.Coalition, flight.InitialSize));
+        Assert.Equal(new AiFlightMember("Enfield 1-1", "F/A-18C", 41.7, 41.7, 4572.0, false), Assert.Single(flight.Members));
     }
 
     [Fact]
