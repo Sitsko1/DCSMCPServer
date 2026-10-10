@@ -22,8 +22,9 @@ public class FlightTools
 
     [McpServerTool(Name = "list_ai_flights")]
     [Description("Lists the AI air groups (aircraft and helicopters) in the running DCS mission: " +
-                 "callsign, mission-editor group name, aircraft type, coalition, position and altitude, " +
-                 "in the user's chosen units. Groups with a human player are marked as such.")]
+                 "flight callsign, mission-editor group name, live/initial aircraft count, aircraft type and " +
+                 "coalition, then each live aircraft's callsign, position and altitude, in the user's chosen units. " +
+                 "Groups and aircraft with a human player are marked as such. Instructions address a whole flight.")]
     public async Task<string> ListAiFlights(CancellationToken cancellationToken = default)
     {
         var (result, flights) = await _connection.ListFlightsAsync(cancellationToken);
@@ -32,8 +33,12 @@ public class FlightTools
 
         UnitSystem u = _status.Units;
         return string.Join('\n', flights.Select(f =>
-            $"{f.Callsign} (group \"{f.GroupName}\"){(f.IsPlayer ? " [player]" : "")}: {f.Type}, {f.Coalition}, " +
-            $"{AircraftStateFormatter.Position(f.Latitude, f.Longitude)}, " +
-            $"{AircraftStateFormatter.Altitude(f.AltitudeMslMeters, u)} MSL"));
+            $"{f.FlightCallsign} (group \"{f.GroupName}\"){Player(f.IsPlayer)}: " +
+            $"{f.Members.Count}/{f.InitialSize?.ToString() ?? "?"}, {f.Type}, {f.Coalition}" +
+            string.Concat(f.Members.Select(m =>
+                $"\n  {m.Callsign}{Player(m.IsPlayer)}: {AircraftStateFormatter.Position(m.Latitude, m.Longitude)}, " +
+                $"{AircraftStateFormatter.Altitude(m.AltitudeMslMeters, u)} MSL"))));
+
+        static string Player(bool isPlayer) => isPlayer ? " [player]" : "";
     }
 }

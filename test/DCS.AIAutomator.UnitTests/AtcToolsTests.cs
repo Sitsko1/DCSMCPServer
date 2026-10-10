@@ -1,9 +1,9 @@
 public class AtcToolsTests
 {
     private const string Flights = """
-        [{"group":"Enfield-1","callsign":"Enfield11","type":"F/A-18C","coalition":2,"lat":1,"lon":2,"altMsl":4572.0,"player":false},
-         {"group":"Player #001","callsign":"Colt11","type":"F/A-18C","coalition":2,"lat":1,"lon":2,"altMsl":6000.0,"player":true},
-         {"group":"Player","callsign":"Colt11","type":"F/A-18C","coalition":2,"lat":1,"lon":2,"altMsl":6000.0,"player":false}]
+        [{"group":"Enfield-1","coalition":2,"initialSize":1,"units":[{"callsign":"Enfield11","type":"F/A-18C","lat":1,"lon":2,"altMsl":4572.0,"player":false}]},
+         {"group":"Player #001","coalition":2,"initialSize":1,"units":[{"callsign":"Colt11","type":"F/A-18C","lat":1,"lon":2,"altMsl":6000.0,"player":true}]},
+         {"group":"Player","coalition":2,"initialSize":1,"units":[{"callsign":"Colt11","type":"F/A-18C","lat":1,"lon":2,"altMsl":6000.0,"player":false}]}]
         """;
 
     private readonly FakeDcsConnection _connection = new();

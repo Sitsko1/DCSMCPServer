@@ -26,7 +26,7 @@ public static class LuaHooksScriptGenerator
     /// handshake reply. <b>Bump it whenever the contract changes</b> (a field or message added,
     /// renamed or removed, on either side): DcsConnection treats any other value, or none (a
     /// script that predates versioning), as an outdated script.</summary>
-    public const int ProtocolVersion = 7;
+    public const int ProtocolVersion = 8;
 
     /// <param name="dcsLinkSecret">Shared with the app (Credential Locker); the app must send it as
     /// its first line or the script answers nothing and runs nothing. Restricted to base64url
@@ -321,8 +321,9 @@ public static class LuaHooksScriptGenerator
             return true
         end
 
-        -- cmd "listFlights": every AI air group (lead unit's callsign, type, position) as JSON data.
-        -- Runs in mission scripting; strings are JSON-escaped there, numbers in DCS's SI units.
+        -- cmd "listFlights": every AI air group (and each live unit's callsign, type, position) as
+        -- JSON data. Runs in mission scripting; strings are JSON-escaped there, numbers in DCS's SI
+        -- units. initialSize is null if getInitialSize fails (it isn't in the stock docs).
         -- Defined below mcpBridgeDisplayName, which it uses (a Lua local is only visible below it).
         local LIST_FLIGHTS_CODE = [==[
             local function esc(s) return (tostring(s):gsub('[%c"\\]', function(ch) return string.format('\\u%04x', ch:byte()) end)) end
@@ -334,18 +335,22 @@ public static class LuaHooksScriptGenerator
             for _, side in ipairs({ 0, 1, 2 }) do
                 for _, category in ipairs({ Group.Category.AIRPLANE, Group.Category.HELICOPTER }) do
                     for _, g in ipairs(coalition.getGroups(side, category) or {}) do
-                        local lead = g:isExist() and g:getUnit(1)
-                        if lead and lead:isExist() then
-                            local player = false
-                            for _, u in ipairs(g:getUnits() or {}) do
-                                if u:getPlayerName() then player = true end
+                        local units = {}
+                        for _, u in ipairs(g:isExist() and g:getUnits() or {}) do
+                            if u:isExist() then
+                                local p = u:getPoint()
+                                local lat, lon = coord.LOtoLL(p)
+                                units[#units + 1] = string.format(
+                                    '{"callsign":"%s","type":"%s","lat":%s,"lon":%s,"altMsl":%s,"player":%s}',
+                                    esc(u:getCallsign() or ""), esc(u:getTypeName()),
+                                    num(lat), num(lon), num(p.y), tostring(u:getPlayerName() ~= nil))
                             end
-                            local p = lead:getPoint()
-                            local lat, lon = coord.LOtoLL(p)
+                        end
+                        if #units > 0 then
+                            local okSize, initial = pcall(function() return g:getInitialSize() end)
                             out[#out + 1] = string.format(
-                                '{"group":"%s","callsign":"%s","type":"%s","coalition":%d,"lat":%s,"lon":%s,"altMsl":%s,"player":%s}',
-                                esc(g:getName()), esc(lead:getCallsign() or ""), esc(lead:getTypeName()),
-                                side, num(lat), num(lon), num(p.y), tostring(player))
+                                '{"group":"%s","coalition":%d,"initialSize":%s,"units":[%s]}',
+                                esc(g:getName()), side, (okSize and type(initial) == "number") and string.format("%d", initial) or "null", table.concat(units, ","))
                         end
                     end
                 end
